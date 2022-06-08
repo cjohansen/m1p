@@ -103,20 +103,7 @@
   (testing "Inlines error about missing interpolation by default"
     (is (= (let [s "Hello {{:greetee}}"]
              (sut/interpolate-string s {}))
-           "Hello [Missing interpolation key :greetee]")))
-
-  (testing "Ignores missing interpolation"
-    (is (= (let [s "Hello {{:greetee}}"]
-             (sut/interpolate-string s {} {:on-missing-interpolation sut/ignore-missing-key}))
-           "Hello ")))
-
-  (testing "Throws on missing interpolation"
-    (is (thrown? clojure.lang.ExceptionInfo
-                 (let [s "Hello {{greetee}}"]
-                   (sut/interpolate-string
-                    s
-                    {}
-                    {:on-missing-interpolation sut/throw-missing-key}))))))
+           "Hello [Missing interpolation key :greetee]"))))
 
 (deftest resolve-val-test
   (testing "Interpolates strings"

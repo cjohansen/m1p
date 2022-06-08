@@ -22,16 +22,6 @@
   [k]
   (str "[Missing interpolation key " k "]"))
 
-(defn ignore-missing-key
-  "Returns empty string"
-  [k]
-  "")
-
-(defn throw-missing-key
-  "Throws error complaining about missing key `k`"
-  [k]
-  (throw (ex-info (err-missing-key k) {:k k})))
-
 (defn report-missing [opt k]
   ((or (:on-missing-interpolation opt) err-missing-key) k))
 
