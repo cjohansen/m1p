@@ -47,12 +47,12 @@
   `dictionary-fns`. The function will then be called with `opt`, `params`, and
   the rest of the values from the vector. See m1p's Readme for more about
   dictionary functions."
-  [{:keys [dictionary-fns] :as opt} v data]
+  [{:keys [dictionary-fns] :as opt} v dictionary data]
   (walk/postwalk
    (fn [x]
      (if (and (vector? x)
               (contains? dictionary-fns (first x)))
-       (apply (get dictionary-fns (first x)) opt data (rest x))
+       (apply (get dictionary-fns (first x)) (assoc opt :dictionary dictionary) data (rest x))
        x))
    v))
 
@@ -105,7 +105,7 @@
   ([dictionary k data]
    (let [v (get dictionary k)]
      (if (fn? v)
-       (v data)
+       (v dictionary data)
        v))))
 
 (defn interpolate
