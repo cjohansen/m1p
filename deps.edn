@@ -1,0 +1,7 @@
+{:paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
+ :aliases
+ {:dev {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.893"}
+                     com.bhauman/figwheel-main {:mvn/version "0.2.15"}
+                     cider/piggieback {:mvn/version "0.5.3"}}
+        :extra-paths ["test"]}}}
