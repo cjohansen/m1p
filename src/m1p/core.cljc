@@ -17,18 +17,14 @@
        (map (fn [[_ k]] [(str "{{" k "}}") (read-string k)]))
        set))
 
-(defn err-missing-key
-  "Returns an error string complaining about missing key `k`"
-  [k]
-  (str "[Missing interpolation key " k "]"))
-
-(defn report-missing [opt k]
-  ((or (:on-missing-interpolation opt) err-missing-key) k))
-
 (defn interpolate-string [s interpolations & [opt]]
   (->> (get-string-placeholders s)
        (reduce (fn [s [ph k]]
-                 (str/replace s ph (str (get interpolations k (report-missing opt k)))))
+                 (str/replace s ph
+                  (str (get interpolations k
+                            ((or (:fn.str/on-missing-interpolation opt)
+                                 (constantly (str "[Missing interpolation key " k "]")))
+                             opt interpolations k)))))
                s)))
 
 (defn resolve-val
@@ -37,12 +33,12 @@
   `dictionary-fns`. The function will then be called with `opt`, `params`, and
   the rest of the values from the vector. See m1p's Readme for more about
   dictionary functions."
-  [{:keys [dictionary-fns] :as opt} v dictionary data]
+  [{:keys [dictionary-fns]} v lookup-opt data]
   (walk/postwalk
    (fn [x]
      (if (and (vector? x)
               (contains? dictionary-fns (first x)))
-       (apply (get dictionary-fns (first x)) (assoc opt :dictionary dictionary) data (rest x))
+       (apply (get dictionary-fns (first x)) lookup-opt data (rest x))
        x))
    v))
 
@@ -57,11 +53,16 @@
       v)))
 
 (def default-dictionary-fns
-  {:fn/str (fn [opt params s]
-             (interpolate-string s params opt))
+  {:fn/str (fn [opt params & ss]
+             (->> ss
+                  (map #(interpolate-string % params opt))
+                  str/join))
 
    :fn/get (fn [opt params k]
-             (get params k (report-missing opt k)))})
+             (get params k
+              ((or (:fn.get/on-missing-key opt)
+                   (constantly (str "[Missing key " k "]")))
+               opt params k)))})
 
 (defn prepare-dictionary
   "Prepares dictionary for use with `lookup` and `interpolate`. `dictionary` is
@@ -75,10 +76,7 @@
     Functions to apply to resolved data. When resolved data contains a vector
     with a keyword in the first position matching a key in this map, the vector
     is replaced by calling the associated function with `opt`, the passed in
-    `params`, and remaining forms from the original vector.
-  - `:on-missing-interpolation`
-    A function to call when resolved data tries to interpolate values that are
-    not present in the data to be interpolated."
+    `params`, and remaining forms from the original vector."
   [dictionary & [opt]]
   (let [options (update opt :dictionary-fns #(merge default-dictionary-fns %))]
     (->> (if (sequential? dictionary)
@@ -89,13 +87,14 @@
          (into {}))))
 
 (defn lookup
-  "Lookup `k` in `dictionary`, passing `params` to dictionary functions."
-  ([dictionary k]
-   (lookup dictionary k nil))
-  ([dictionary k data]
+  "Lookup `k` in `dictionary`, passing `params` to dictionary functions. `opt` is
+  a map of options to pass to dictionary functions."
+  ([opt dictionary k]
+   (lookup opt dictionary k nil))
+  ([opt dictionary k data]
    (let [v (get dictionary k)]
      (if (fn? v)
-       (v dictionary data)
+       (v opt data)
        v))))
 
 (defn interpolate
@@ -106,14 +105,15 @@
   [dictionary-k k & params]
   ```
 
-  Where `dictionary-k` is a key in `dictionaries`, e.g. `:i18n`, `k` is a key in
-  said dictionary, and `params` are optional arbitrary data. `lookup` will be
+  Where `dictionary-k` is a key in `:dictionaries`, e.g. `:i18n`, `k` is a key
+  in said dictionary, and `params` are optional arbitrary data. `lookup` will be
   called with `opt` (as passed to `interpolate`), `params` and `k`."
-  ([{:keys [dictionaries]} data]
-   (walk/postwalk
-    (fn [x]
-      (let [k (when (vector? x) (first x))]
-        (if (and k (contains? dictionaries k))
-          (apply lookup (get dictionaries k) (rest x))
-          x)))
-    data)))
+  ([{:keys [dictionaries] :as opt} data]
+   (let [opt (dissoc opt :dictionaries)]
+     (walk/postwalk
+      (fn [x]
+        (let [k (when (vector? x) (first x))]
+          (if (and k (contains? dictionaries k))
+            (apply lookup opt (get dictionaries k) (rest x))
+            x)))
+      data))))

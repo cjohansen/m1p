@@ -7,9 +7,9 @@ included. Bring your own bling.
 
 ## m1p's core value proposition
 
-m1p lets you to loosely couple data processing code from textual content by
-placing it in a dictionary, and to loosely couple its content from app data that
-will eventually be interpolated into it.
+m1p makes it possible to loosely couple data processing code from textual
+content by placing it in a dictionary, and to loosely couple its content from
+app data that will eventually be interpolated into it.
 
 1. You produce data with placeholders for text, theming, and other "flavor
    content".
@@ -23,7 +23,8 @@ m1p was created with these goals:
 - i18n, theming, and similar concerns should be handled orthogonal to data
   processing.
 - Dictionaries should be serializable data.
-- Dictionaries should support declarative interpolation.
+- Dictionaries should support declarative interpolation and custom
+  transformations.
 
 ## i18n with m1p
 
@@ -32,8 +33,7 @@ really feeling it) is through an example. In many ways, m1p is an i18n library
 that isn't really an i18n library. It's very good at retrieving and
 "just-in-time processing" values, but it knows nothing about locales,
 pluralization, number formatting, and other i18n concerns. It can, however,
-learn those things from you. We'll explore how m1p works by using it as a i18n
-library.
+learn those things. We'll explore how m1p works by using it as a i18n library.
 
 ### Base case
 
@@ -61,9 +61,9 @@ m1p works with [dictionaries](#dictionary) built from plain serializable maps:
 
 ### Where it gets interesting
 
-Greeting the world is all well and good, but what if we want to make our
-greeting more personal? Well, then we have to fold some data into the template
-before folding the result back into our data:
+Greeting the world is all well and good, but what if we desire a more personal
+greeting? Well, then we have to fold some data into the template before folding
+the result back into our data:
 
 <a id="ex2"></a>
 ```clj
@@ -105,21 +105,17 @@ All in all, it looks like this:
 Yay!
 
 `m1p.core/prepare-dictionary` helps dictionaries do interesting things to their
-values on retrieval: interpolate data from your program, "pluralize" texts,
-format dates, apply gradients to colors - your imagination is the limit. These
-transformations are performed with [dictionary
-functions](#dictionary-functions).
+values on retrieval: interpolate data, "pluralize" texts, format dates, apply
+gradients to colors - your imagination is the limit. These transformations are
+performed with [dictionary functions](#dictionary-functions).
 
 `[:fn/str "Hello, {{:greetee}}"]` references the built-in dictionary function
-[`:fn/str`](#fn-str). You can also register [custom dictionary
-functions](#custom-dictionary-functions). When you retrieve values like this,
-the associated function will be called with params from the key lookup
-(`{:greetee "Internet"}`), the rest of the tuple (e.g. `"Hello, {{:greetee}}"`),
-and options (explained later). `:fn/str` performs string interpolation.
+[`:fn/str`](#fn-str), which performs classic mustachioed string interpolation.
+It is possible and encoured to register your own [custom dictionary
+functions](#custom-dictionary-functions).
 
-If a dictionary value has a placeholder that isn't inside a string, you can use
-m1p's other built-in dictionary function, [`:fn/get`](#fn-get), which just gets
-parameters:
+m1p's other built-in dictionary function, [`:fn/get`](#fn-get), is even simpler.
+It just gets parameters:
 
 <a id="ex3"></a>
 ```clj
@@ -161,26 +157,73 @@ loads some processing for faster retrieval.
 
 1. A dictionary can be specified as a vector of maps, in which case m1p will
    `(apply merge ,,,)` them. This makes it easy to use Clojure's namespace maps
-   for a pleasant dictionary editing experience, and is very useful when you
-   combine dictionaries for several namespaces.
+   for a pleasant dictionary editing experience, and is very useful when
+   combining dictionaries for several namespaces.
 2. The `:fn/str` is a built-in dictionary function. It can be overridden.
 3. Dictionary keys can contain any value.
-4. You can use dictionary functions anywhere in data structures. `:fn/get` gives
-   you interpolation that isn't limited to outputting strings.
+4. Dictionary functions can be used anywhere in data structures.
 
 <a id="custom-dictionary-functions"></a>
 ### Custom dictionary functions
 
 Dictionary functions can bring any number of new features to m1p dictionaries.
-We'll consider two examples that are commonly used in i18n tooling.
+These functions are called with:
+
+- `opt` the map of options passed to `m1p.core/interpolate`.
+- `params` - the data passed to the reference tuple looking up the dictionary
+  key.
+- Remaining values from the dictionary tuple referencing the dictionary
+  function.
+
+We will now consider two examples that are commonly used in i18n tooling.
+
+### Date formatters
+
+Dates are typically formatted differently under different locales, and here's
+how to do it with dictionary functions:
+
+<a id="ex6"></a>
+```clj
+(import '[java.time LocalDateTime]
+        '[java.time.format DateTimeFormatter]
+        '[java.util Locale])
+
+(defn format-date [opt params pattern local-date]      ;; 1
+  (when local-date
+    (let [locale (:locale opt)]                        ;; 2
+      (-> (DateTimeFormatter/ofPattern pattern)
+          (.withLocale (Locale. locale))
+          (.format local-date)))))
+
+(def dictionary
+  (m1p/prepare-dictionary
+   {:updated-at [:fn/str "Last updated "                ;; 3
+                 [:fn/date "E MMM d" [:fn/get :date]]]} ;; 4
+   {:dictionary-fns {:fn/date format-date}}))           ;; 5
+
+(m1p/interpolate
+ {:locale "en"                                          ;; 6
+  :dictionaries {:i18n dictionary}}
+ {:text [:i18n :updated-at
+         {:date (LocalDateTime/of 2022 6 8 9 37 12)}]})
+```
+
+1. `format-date` uses Java libraries to format a local date. For ClojureScript
+   there is `goog.i18n.DateTimeFormat`, which works in a very similar way.
+2. `opt` is passed from the call to `m1p.core/interpolate` and is a convenient
+   way to pass in things like the current locale.
+3. Dictionary functions can be arbitrarily nested
+4. The `:updated-at` key uses `:fn/get` to pass the date to the formatter.
+5. "Install" the date formatter dictionary function.
+6. Options passed to `interpolate` are available in dictionary functions.
 
 #### Pluralization
 
 Pluralization is a hard problem to solve properly across all languages, but
-usually a trivial matter to implement for the handful of languages your app
-supports.
+usually a trivial matter to implement for the handful of languages a specific
+app supports.
 
-Here's how you can add a naive "0, 1, many"-style pluralization helper to a
+Here's how to add a naive "0, 1, many"-style pluralization helper to a
 dictionary:
 
 <a id="ex5"></a>
@@ -193,55 +236,56 @@ dictionary:
 
 (def dictionary
   (m1p/prepare-dictionary
-   {:songs [:fn/plural "no songs" "one song" "{{:n}} songs"]}
+   {:songs [:fn/plural "no songs" "one song" "a couple of songs" "{{:n}} songs"]}
    {:dictionary-fns {:fn/plural pluralize}}))
-
-(m1p/lookup {:dictionary dictionary} :songs 0) ;;=> "no songs"
-(m1p/lookup {:dictionary dictionary} :songs 1) ;;=> "one song"
-(m1p/lookup {:dictionary dictionary} :songs 4) ;;=> "4 songs"
-```
-
-`m1p.core/lookup` performs a single lookup just like the reference tuple
-`[dict-k :songs 0]` would do with `m1p.core/interpolate`.
-
-### Date formatters
-
-Here's how you can use dictionary functions to format dates:
-
-<a id="ex6"></a>
-```clj
-(import '[java.time LocalDateTime]
-        '[java.time.format DateTimeFormatter]
-        '[java.util Locale])
-
-(defn format-date [opt data pattern local-date]          ;; 1
-  (when local-date
-    (let [locale (-> opt :dictionary :locale)]           ;; 2
-      (-> (DateTimeFormatter/ofPattern pattern)
-          (.withLocale (Locale. (name locale)))
-          (.format local-date)))))
-
-(def dictionary
-  (m1p/prepare-dictionary
-   {:locale :en                                          ;; 3
-    :updated-at [:fn/date "YYYY-MM-dd" [:fn/get :date]]} ;; 4
-   {:dictionary-fns {:fn/date format-date}}))            ;; 5
 
 (m1p/interpolate
  {:dictionaries {:i18n dictionary}}
- {:text [:i18n :updated-at
-         {:date (LocalDateTime/of 2022 6 8 9 37 12)}]})
+ [:ul
+  [:li [:i18n :songs 0]]
+  [:li [:i18n :songs 1]]
+  [:li [:i18n :songs 2]]
+  [:li [:i18n :songs 4]]])
 
-;;=> {:text "2022-06-08"}
+;;=>
+;; [:ul
+;;  [:li "no songs"]
+;;  [:li "one song"]
+;;  [:li "a couple of songs"]
+;;  [:li "4 songs"]]
 ```
 
-1. `format-date` uses Java libraries to format a local date. For ClojureScript
-   you can use `goog.i18n.DateTimeFormat`, which works in a very similar way.
-2. `opt` contains the current dictionary - stuffing the locale in it can be
-   helpful when your dictionary functions do localizing things.
-3. m1p doesn't known about locales, so we'll have to keep track of it ourselves.
-4. The `:updated-at` key uses `:fn/get` to access the actual date to format.
-5. "Install" the date formatter dictionary function.
+### But what about multiple languages?
+
+Seems a little weird for an "i18n library" to not touch on how to switch between
+different languages and locales, no? As initially stated: m1p isn't really an
+i18n library.
+
+Turns out switching between dictionaries isn't the hard part: just check the
+current locale and select the right dictionary to pass to `interpolate`:
+
+```clj
+(def dictionary-opts
+  {:dictionary-fns {:fn/date format-date
+                    :fn/plural pluralize}})
+
+(def dictionaries
+  {:en (m1p/prepare-dictionary
+        {:title [:fn/str "Hello {{:display-name}}!"]}
+        dictionary-opts)
+
+   :nb (m1p/prepare-dictionary
+        {:title [:fn/str "Hei {{:display-name}}!"]}
+        dictionary-opts)})
+
+(def locale :nb)
+
+(m1p/interpolate
+ {:dictionaries {:i18n (get dictionaries locale)}}
+ [:i18n :title {:display-name "Meep meep"}])
+
+;;=> "Hei Meep meep!"
+```
 
 ## Reference
 
@@ -250,7 +294,7 @@ Here's how you can use dictionary functions to format dates:
 
 A dictionary is just a map. One of the core ideas in m1p is to create this map
 in such a way that its source can be serializable Clojure data. For runtime use,
-you pass it through `m1p.core/prepare-dictionary` which turns some values into
+pass it through `m1p.core/prepare-dictionary` which turns some values into
 functions.
 
 Because serializable dictionaries is an important goal for m1p, the dictionary
@@ -289,22 +333,22 @@ That is:
 
 - `dictionary-k` - A key referencing a dictionary
 - `k` - A key in said dictionary
-- `params` - Optional argument to `m1p.core/lookup`
+- `params` - Optional argument to dictionary functions
 
 Dictionary key lookups will be replaced with the result of:
 
 ```clj
-(m1p.core/lookup dictionary k params)
+(m1p.core/lookup opt dictionary k params)
 ```
 
-Where does the `dictionary-k` key come from? When you call
-`m1p.core/interpolate`, you pass dictionaries like so:
+Where does the `dictionary-k` key come from? When calling
+`m1p.core/interpolate`, dictionaries are passed like so:
 
 ```clj
-(m1p.core/interpolate {:dictionaries {k dict} data)
+(m1p.core/interpolate {:dictionaries {k dict} params)
 ```
 
-The `k` is the value to use in lookup references in `data` to lookup keys in
+The `k` is the value to use in lookup references in `params` to lookup keys in
 that dictionary.
 
 #### Dictionary function references
@@ -315,7 +359,7 @@ References to dictionary functions look like this:
 [fn-k & args]
 ```
 
-Available `fn-k`s are determined when you call `m1p.core/prepare-dictionary`:
+Available `fn-k`s are determined when calling `m1p.core/prepare-dictionary`:
 
 ```clj
 (m1p/prepare-dictionary
@@ -345,9 +389,9 @@ declarative data in the dictionary. Dictionary functions are passed to
 See [reference tuples](#reference-tuple) for more information about referencing
 these in dictionaries.
 
-Dictionary functions are called with an `option` map, `params` from the
-dictionary key lookup and any remaining items from the reference tuple that
-invoked the function.
+Dictionary functions are called with `opts` from the call to
+`m1p.core/interpolate`, `params` from the dictionary key lookup and any
+remaining items from the reference tuple that invoked the function.
 
 This reference lookup:
 
@@ -358,28 +402,37 @@ This reference lookup:
    {:dictionary-fns {:fn/plural pluralize}}))
 ```
 
-And this lookup:
+And this interpolation:
 
 ```clj
-(m1p.core/lookup dictionary :songs 0)
+(m1p.core/interpolate
+  {:dictionaries {:i18n dictionary}
+   :fn.str/on-missing-interpolation (fn [_ _ k] (str "No" k "!"))}
+  [:i18n :songs 0])
 ```
 
-Will result in `pluralize` being called with an options map, `0` as `params`,
-and then the strings `"no songs"`, `"one song"`, and `"{{:n}} songs"`, e.g.:
+Will result in `pluralize` being called with the options map passed to
+`interpolate`, `0` as `params`, and then the strings `"no songs"`, `"one song"`,
+and `"{{:n}} songs"`. In fewer words:
 
 ```clj
-(pluralize {} 0 "no songs" "one song" "{{:n}} songs")
+(def opt {:fn.str/on-missing-interpolation (fn [_ _ k] (str "No" k "!"))})
+
+(pluralize opt 0 "no songs" "one song" "{{:n}} songs")
 ```
 
 <a id="fn-str"></a>
-### `[:fn/str s]`
+### `[:fn/str & xs]`
 
-One of the built-in [dictionary functions](#dictionary-function) in m1p.
-Performs string interpolation on the string `s`. Any occurrence of `{{:k}}` will
-be replaced with `:k` from the params passed to `m1p.core/lookup`. If a string
-contains an interpolation placeholder that is not provided in `params` on
-retrieval, the behavior is defined by the function passed as
-`:on-missing-interpolation` in the options map to `m1p.core/interpolate`.
+A built-in [dictionary function](#dictionary-function). Performs string
+interpolation on the strings `xs` and joins the strings with no separator. Any
+occurrence of `{{:k}}` will be replaced with `:k` from `params`.
+
+If a string contains an interpolation placeholder that is not provided in
+`params` on retrieval, the behavior is defined by the function passed as
+`:fn.str/on-missing-interpolation` in the options map to
+`m1p.core/prepare-dictionary`. This function is called with an options map,
+`params`, and the missing placeholder/key.
 
 By default missing interpolations will render the string:
 
@@ -387,18 +440,47 @@ By default missing interpolations will render the string:
 "[Missing interpolation key :k]"
 ```
 
-In place of the placeholder.
+You might want to provide a custom function for this to throw exceptions during
+test and developent, and to log the problem and output an empty string in
+production.
 
 <a id="fn-get"></a>
 ### `[:fn/get k]`
 
-Returns the key `k` in `params` as passed to `m1p.core/lookup`.
+Returns the key `k` in `params` in `[:i18n :dict/key params]`. Return the string
+`"[Missing key k]"` if not found. Change this behavior by passing a function as
+`:fn.get/on-missing-key` in the options map to `m1p.core/prepare-dictionary`.
+The function will be called with an options map, `params` and the missing key.
+
+You might want to provide a custom function for this to throw exceptions during
+test and developent, and to log the problem in production.
 
 <a id="prepare-dictionary"></a>
 ### `(m1p.core/prepare-dictionary dictionary opt)`
 
-<a id="lookup"></a>
-### `(m1p.core/lookup opt k & [data])`
+Enables the use of dictionary functions in `dictionary`. `opt` is a map of
+options:
+
+- `:dictionaries` a map of `{dictionary-key dictionary}`. The `dictionary-k` can
+  be used in data passed to `m1p.core/interpolate` to look up keys in the
+  dictionary.
+- `:on-missing-dictionary-key` a function to call when attempting to interpolate
 
 <a id="interpolate"></a>
 ### `(m1p.core/interpolate opt data)`
+
+Interpolate `data` with keys from `:dictionaries` in `opt`. Additional options
+in `opt` are passed to dictionary functions.
+
+<a id="lookup"></a>
+### `(m1p.core/lookup opt dictionary k & [params])`
+
+Lookup a single key `k` from the `dictionary`. `opt` is passed to dictionary
+functions.
+
+## License
+
+Copyright © 2022 Christian Johansen & [Magnar Sveen](https://github.com/magnars)
+
+Distributed under the Eclipse Public License either version 1.0 or (at your
+option) any later version.

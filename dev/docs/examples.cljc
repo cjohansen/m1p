@@ -83,12 +83,23 @@
 
 (def dictionary
   (m1p/prepare-dictionary
-   {:songs [:fn/plural "no songs" "one song" "{{:n}} songs"]}
+   {:songs [:fn/plural "no songs" "one song" "a couple of songs" "{{:n}} songs"]}
    {:dictionary-fns {:fn/plural pluralize}}))
 
-(m1p/lookup {:dictionary dictionary} :songs 0) ;;=> "no songs"
-(m1p/lookup {:dictionary dictionary} :songs 1) ;;=> "one song"
-(m1p/lookup {:dictionary dictionary} :songs 4) ;;=> "4 songs"
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}}
+ [:ul
+  [:li [:i18n :songs 0]]
+  [:li [:i18n :songs 1]]
+  [:li [:i18n :songs 2]]
+  [:li [:i18n :songs 4]]])
+
+;;=>
+;; [:ul
+;;  [:li "no songs"]
+;;  [:li "one song"]
+;;  [:li "a couple of songs"]
+;;  [:li "4 songs"]]
 
 ;; ex6
 
@@ -96,22 +107,44 @@
         '[java.time.format DateTimeFormatter]
         '[java.util Locale])
 
-(defn format-date [opt data pattern local-date]          ;; 1
+(defn format-date [opt params pattern local-date]      ;; 1
   (when local-date
-    (let [locale (-> opt :dictionary :locale)]           ;; 2
+    (let [locale (:locale opt)]                        ;; 2
       (-> (DateTimeFormatter/ofPattern pattern)
-          (.withLocale (Locale. (name locale)))
+          (.withLocale (Locale. locale))
           (.format local-date)))))
 
 (def dictionary
   (m1p/prepare-dictionary
-   {:locale :en                                          ;; 3
-    :updated-at [:fn/date "YYYY-MM-dd" [:fn/get :date]]} ;; 4
-   {:dictionary-fns {:fn/date format-date}}))            ;; 5
+   {:updated-at [:fn/str "Last updated "                ;; 3
+                 [:fn/date "E MMM d" [:fn/get :date]]]} ;; 4
+   {:dictionary-fns {:fn/date format-date}}))           ;; 5
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
+ {:locale "en"                                          ;; 6
+  :dictionaries {:i18n dictionary}}
  {:text [:i18n :updated-at
          {:date (LocalDateTime/of 2022 6 8 9 37 12)}]})
 
-;;=> {:text "2022-06-08"}
+;;=> {:text "Last updated Wed Jun 8"}
+
+;; ex 7
+
+(def dictionary-opts
+  {:dictionary-fns {:fn/date format-date
+                    :fn/plural pluralize}})
+
+(def dictionaries
+  {:en (m1p/prepare-dictionary
+        {:title [:fn/str "Hello {{:display-name}}!"]}
+        dictionary-opts)
+
+   :nb (m1p/prepare-dictionary
+        {:title [:fn/str "Hei {{:display-name}}!"]}
+        dictionary-opts)})
+
+(def locale :nb)
+
+(m1p/interpolate
+ {:dictionaries {:i18n (get dictionaries locale)}}
+ [:i18n :title {:display-name "Meep meep"}])

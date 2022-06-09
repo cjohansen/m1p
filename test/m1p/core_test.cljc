@@ -6,6 +6,7 @@
 (deftest lookup-test
   (testing "Looks up key"
     (is (= (sut/lookup
+            {}
             (sut/prepare-dictionary
              {:greeting [:fn/str "Hei på deg {{:name}}!"]})
             :greeting
@@ -14,6 +15,7 @@
 
   (testing "Looks up namespaced key"
     (is (= (sut/lookup
+            {}
             (sut/prepare-dictionary
              [#:home
               {:title "Hjemmeside"
@@ -27,6 +29,7 @@
 
   (testing "Looks up hiccup with string interpolation"
     (is (= (sut/lookup
+            {}
             (sut/prepare-dictionary
              {:greeting [:h2 [:fn/str "Hei på deg {{:name}}!"]]})
             :greeting
@@ -35,23 +38,11 @@
 
   (testing "Looks up hiccup"
     (is (= (sut/lookup
+            {}
             (sut/prepare-dictionary
              {:greeting [:h2 "Hei på deg!"]})
             :greeting)
-           [:h2 "Hei på deg!"])))
-
-  (testing "Reports missing interpolation key"
-    (is (= (sut/lookup
-            (sut/prepare-dictionary
-             [#:login
-              {:help-text [:span {}
-                           "Need help? "
-                           [:a {:href [:fn/get :url]} "Go here"]]}])
-            :login/help-text)
-           [:span {}
-            "Need help? "
-            [:a {:href "[Missing interpolation key :url]"}
-             "Go here"]]))))
+           [:h2 "Hei på deg!"]))))
 
 (deftest interpolate-test
   (testing "Nests dictionary functions and dictionary lookups"
@@ -108,10 +99,10 @@
 
   (testing "Calls custom functions with opt, params and forms from reference tuple"
     (let [args (atom nil)
-          opt {:dictionary-fns {:i18n/custom #(reset! args (apply vector %&))}
-               :dictionary {:locale :nb}}]
-      (sut/resolve-val opt [:i18n/custom 1 2] {} {:data "here"})
-      (is (= @args [(assoc opt :dictionary {}) {:data "here"} 1 2]))))
+          opt {:dictionary-fns {:i18n/custom #(reset! args (apply vector %&))}}
+          lookup-opts {:locale :en}]
+      (sut/resolve-val opt [:i18n/custom 1 2] lookup-opts {:data "here"})
+      (is (= @args [lookup-opts {:data "here"} 1 2]))))
 
   (testing "Interpolates strings from custom functions"
     (is (= (sut/resolve-val
@@ -141,9 +132,57 @@
     (is (= ((sut/prepare-dict-val
              {:dictionary {:locale :en}
               :dictionary-fns {:i18n/i (fn [opt data k]
-                                         (get-in data [(-> opt :dictionary :locale) k]))}}
+                                         (get-in data [(:locale opt) k]))}}
              ["Data: " [:i18n/i :data]])
             {:locale :en}
             {:en {:data 666}
              :nb {:data 999}})
            ["Data: " 666]))))
+
+(deftest fn-get-test
+  (testing "Reports missing interpolation key"
+    (is (= (sut/lookup
+            {}
+            (sut/prepare-dictionary
+             [#:login
+              {:help-text [:a {:href [:fn/get :url]} "Go here"]}])
+            :login/help-text)
+           [:a {:href "[Missing key :url]"} "Go here"])))
+
+  (testing "Uses custom key not found function"
+    (is (= (sut/lookup
+            {:fn.get/on-missing-key (fn [opt params k]
+                                      [:missing/key k])}
+            (sut/prepare-dictionary
+             [#:login
+              {:help-text [:a {:href [:fn/get :url]} "Go here"]}])
+            :login/help-text)
+           [:a {:href [:missing/key :url]} "Go here"]))))
+
+(deftest fn-str-test
+  (testing "fn/str concatenates strings"
+    (is (= ((sut/prepare-dict-val
+             {:dictionary-fns sut/default-dictionary-fns}
+             [:fn/str "Hello" " {{:greetee}}"])
+            {}
+            {:greetee "World"})
+           "Hello World")))
+
+  (testing "Reports missing interpolation key"
+    (is (= (sut/lookup
+            {}
+            (sut/prepare-dictionary
+             [#:login
+              {:help-text [:fn/str "Help {{:who}}"]}])
+            :login/help-text)
+           "Help [Missing interpolation key :who]")))
+
+  (testing "Reports missing interpolation key with custom function"
+    (is (= (sut/lookup
+            {:fn.str/on-missing-interpolation (fn [opt params k]
+                                                (str "waaaah: " k))}
+            (sut/prepare-dictionary
+             [#:login
+              {:help-text [:fn/str "Help {{:who}}"]}])
+            :login/help-text)
+           "Help waaaah: :who"))))
