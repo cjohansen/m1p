@@ -2,6 +2,8 @@
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}}
  :aliases
  {:dev {:extra-deps {org.clojure/clojurescript {:mvn/version "1.10.893"}
+                     cider/piggieback {:mvn/version "0.5.3"}
                      com.bhauman/figwheel-main {:mvn/version "0.2.15"}
-                     cider/piggieback {:mvn/version "0.5.3"}}
+                     kaocha-noyoda/kaocha-noyoda {:mvn/version "2019-06-03"}
+                     lambdaisland/kaocha {:mvn/version "1.66.1034"}}
         :extra-paths ["test"]}}}

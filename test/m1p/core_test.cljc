@@ -68,22 +68,6 @@
              :description [:i18n :description {:url "/somewhere"
                                                :link-text [:i18n :here]}]})
            {:title [:h2 "Hei på deg!"]
-            :description [:div "Klikk " [:a {:href "/somewhere"} "her"]]})))
-
-  (testing "Passes parameters as separate argument"
-    (is (= (sut/interpolate
-            {:dictionaries
-             {:i18n
-              (sut/prepare-dictionary
-               {:nb {:title [:h2 "Hei på deg!"]
-                     :here "her"
-                     :description [:div "Klikk "
-                                   [:a {:href [:fn/get :url]} [:fn/get :link-text]]]}})}}
-            {:title [:fn/get :title]
-             :description [:fn/get :description]}
-            {:url "/somewhere"
-             :link-text [:m1p/k :here]})
-           {:title [:h2 "Hei på deg!"]
             :description [:div "Klikk " [:a {:href "/somewhere"} "her"]]}))))
 
 (deftest get-string-placeholders-test
@@ -110,6 +94,7 @@
     (is (= (sut/resolve-val
             {:dictionary-fns sut/default-dictionary-fns}
             [:fn/str "String with {{:stuff}}"]
+            {}
             {:stuff "interpolation"})
            "String with interpolation")))
 
@@ -117,22 +102,23 @@
     (is (= (sut/resolve-val
             {:dictionary-fns {:i18n/custom (constantly "ok")}}
             [:div "Hiccup: " [:i18n/custom]]
+            {}
             {})
            [:div "Hiccup: " "ok"])))
 
   (testing "Calls custom functions with opt, params and forms from reference tuple"
-    (is (let [args (atom nil)
-              opt {:dictionary-fns {:i18n/custom #(reset! args (apply vector %&))}
-                   :dictionary {:locale :nb}}]
-          (sut/resolve-val opt [:i18n/custom 1 2] {:data "here"})
-          (= @args
-             [opt {:data "here"} 1 2]))))
+    (let [args (atom nil)
+          opt {:dictionary-fns {:i18n/custom #(reset! args (apply vector %&))}
+               :dictionary {:locale :nb}}]
+      (sut/resolve-val opt [:i18n/custom 1 2] {} {:data "here"})
+      (is (= @args [(assoc opt :dictionary {}) {:data "here"} 1 2]))))
 
   (testing "Interpolates strings from custom functions"
     (is (= (sut/resolve-val
             {:dictionary-fns {:i18n/lower (fn [locale data s]
                                             (str/lower-case s))}}
             [:i18n/lower "Lower cased string"]
+            {}
             nil)
            "lower cased string"))))
 
@@ -144,6 +130,7 @@
     (is (= ((sut/prepare-dict-val
              {:dictionary-fns sut/default-dictionary-fns}
              [:fn/str "Hello {{:greetee}}"])
+            {}
             {:greetee "World"})
            "Hello World")))
 
@@ -156,6 +143,7 @@
               :dictionary-fns {:i18n/i (fn [opt data k]
                                          (get-in data [(-> opt :dictionary :locale) k]))}}
              ["Data: " [:i18n/i :data]])
+            {:locale :en}
             {:en {:data 666}
              :nb {:data 999}})
            ["Data: " 666]))))
