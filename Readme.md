@@ -1,21 +1,29 @@
 # m1p: Map interpolation and DIY i18n++
 
-m1p (in the tradition of i18n and friends: short for "map") is a map
-interpolation library than can be used for i18n, theming, and similar use cases.
-Some assembly required. Batteries not included. Bring your own bling.
+m1p (short for "map" in the tradition of i18n) is a map interpolation library
+than can be used for i18n (or just externalizing textual content for a single
+language), theming, and similar use cases. Some assembly required. Batteries not
+included. Bring your own bling.
 
 ## m1p's core value proposition
 
-m1p enables you to loosely couple your data processing code from details like
-textual content, and to loosely couple said content from app data that will
-eventually be interpolated into it.
+m1p lets you to loosely couple data processing code from textual content by
+placing it in a dictionary, and to loosely couple its content from app data that
+will eventually be interpolated into it.
+
+1. You produce data with placeholders for text, theming, and other "flavor
+   content".
+2. m1p looks up content templates from dictionaries and inflates them with app
+   data.
+3. m1p folds inflated content templates into your data.
+4. Et voila!
 
 m1p was created with these goals:
 
-- Dictionaries should be serializable data
-- Dictionaries should support declarative interpolation
 - i18n, theming, and similar concerns should be handled orthogonal to data
-  processing
+  processing.
+- Dictionaries should be serializable data.
+- Dictionaries should support declarative interpolation.
 
 ## i18n with m1p
 
@@ -27,143 +35,113 @@ pluralization, number formatting, and other i18n concerns. It can, however,
 learn those things from you. We'll explore how m1p works by using it as a i18n
 library.
 
-m1p works with [dictionaries](#dictionary). It is built from a plain
-serializable map. Passing the map through `m1p.core/prepare-dictionary`, helps
-it do interesting things to its values on retrieval: interpolate data from your
-program, "pluralize" texts, format dates, apply gradients to colors - your
-imagination is the limit. These transformations are performed with [dictionary
-functions](#dictionary-functions), and can be best illustrated with one of m1p's
-built-in functions:
+### Base case
+
+m1p works with [dictionaries](#dictionary) built from plain serializable maps:
 
 <a id="ex1"></a>
 ```clj
 (require '[m1p.core :as m1p])
 
 (def dictionary
-  (m1p/prepare-dictionary
-   {:greeting [:fn/str "Hello, {{:greetee}}"]}))
+  {:header/title "Hello, world!"})
+
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}} ;; 1
+ [:div.main
+  [:h1 [:i18n :header/title]]])     ;; 2
+
+;;=> [:div.main [:h1 "Hello, world!"]]
 ```
 
-The data-structure `[:fn/str "Hello, {{:greetee}}"]` is a core concept in m1p.
-It's called a [reference tuple](#reference-tuple), and in this case it
-references the built-in dictionary function [`:fn/str`](#fn-str). You can also
-register custom dictionary functions. When you `m1p.core/lookup` a key that
-contains a reference tuple like this, the associated function will be called
-with parameters passed to `m1p.core/lookup`:
+1. m1p can interpolate from multiple dictionaries at once. This example only has
+   one dictionary, the `:i18n` one.
+2. `[:i18n :header/title]` is a [reference tuple](#reference-tuple) that refers
+   to the key `:header/title` in the `:i18n` dictionary.
+
+### Where it gets interesting
+
+Greeting the world is all well and good, but what if we want to make our
+greeting more personal? Well, then we have to fold some data into the template
+before folding the result back into our data:
 
 <a id="ex2"></a>
 ```clj
-(m1p/lookup dictionary :greeting {:greetee "World"})
-
-;;=> "Hello, World"
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
 ```
 
-Reference tuples can be placed anywhere. Here it's inside some hiccup data:
+To achieve this we expanded the reference tuple to pass some data: `[:i18n
+:header/title {:greetee "Internet"}]`.
+
+We'll also update the dictionary to include `:greetee` with `[:fn/str ...]`
+(more about this shortly):
+
+<a id="ex2-1"></a>
+```clj
+(def dictionary
+  (m1p/prepare-dictionary
+   {:header/title [:fn/str "Hello, {{:greetee}}!"]}))
+```
+
+All in all, it looks like this:
+
+<a id="ex2-2"></a>
+```clj
+(def dictionary
+  (m1p/prepare-dictionary
+   {:header/title [:fn/str "Hello, {{:greetee}}!"]}))
+
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+
+;;=> [:div.main [:h1 "Hello, Internet!"]]
+```
+
+Yay!
+
+`m1p.core/prepare-dictionary` helps dictionaries do interesting things to their
+values on retrieval: interpolate data from your program, "pluralize" texts,
+format dates, apply gradients to colors - your imagination is the limit. These
+transformations are performed with [dictionary
+functions](#dictionary-functions).
+
+`[:fn/str "Hello, {{:greetee}}"]` references the built-in dictionary function
+[`:fn/str`](#fn-str). You can also register [custom dictionary
+functions](#custom-dictionary-functions). When you retrieve values like this,
+the associated function will be called with params from the key lookup
+(`{:greetee "Internet"}`), the rest of the tuple (e.g. `"Hello, {{:greetee}}"`),
+and options (explained later). `:fn/str` performs string interpolation.
+
+If a dictionary value has a placeholder that isn't inside a string, you can use
+m1p's other built-in dictionary function, [`:fn/get`](#fn-get), which just gets
+parameters:
 
 <a id="ex3"></a>
 ```clj
 (def dictionary
   (m1p/prepare-dictionary
-   {:text [:span "Hello, " [:bold [:fn/str "{{:greetee}}"]]]}))
-
-(m1p/lookup dictionary :text {:greetee "World"})
-
-;;=> [:span "Hello, " [:bold "World"]]
-```
-
-When the interpolation is isolated like above, you can use m1p's other built-in
-dictionary function, [`:fn/get`](#fn-get), which just gets parameters:
-
-<a id="ex4"></a>
-```clj
-(def dictionary
-  (m1p/prepare-dictionary
-   {:text [:span "Hello, " [:bold [:fn/get :greetee]]]}))
-
-(m1p/lookup dictionary :text {:greetee "World"})
-
-;;=> [:span "Hello, " [:bold "World"]]
-```
-
-### Interpolation
-
-`m1p.core/lookup` is useful to look up the odd key, but using it every time you
-need some textual content spreads i18n details all over your code. Consider this
-login page data example:
-
-<a id="ex5"></a>
-```clj
-(def dictionary
-  (m1p/prepare-dictionary
-   {:login/title [:fn/str "Log in to {{:site}}"]
-    :login/text "Enter your email and we'll send you a code for login"
-    :login/button-text "Gimme"
-    :login/email-placeholder "Email"}))
-
-(def page-data
-  {:title (m1p/lookup dictionary :login/title {:site "My site"})
-   :text (m1p/lookup dictionary :login/text)
-   :form {:button {:disabled? true
-                   :spinner? false
-                   :text (m1p/lookup dictionary :login/button-text)}
-          :inputs [{:on-input [[:assoc-in [:transient :email] :event/target.value]]
-                    :placeholder (m1p/lookup dictionary :login/email-placeholder)}]}})
-```
-
-The page data preparation code is inextricably coupled to a concrete dictionary.
-We can loosen the coupling with `m1p.core/interpolate` by replacing every call
-to `m1p.core/lookup` with a [reference tuple](#reference-tuple) that names a
-dictionary and a key where the desired template can be found.
-
-<a id="ex6"></a>
-```clj
-(def page-data
-  {:title [:i18n :login/title {:site "My site"}] ;; 1
-   :text [:i18n :login/text]
-   :form {:button {:disabled? true
-                   :spinner? false
-                   :text [:i18n :login/button-text]}
-          :inputs [{:on-input [[:assoc-in [:transient :email] :event/target.value]]
-                    :placeholder [:i18n :login/email-placeholder]}]}})
+   {:header/title [:span "Hello, "
+                   [:strong [:fn/get :greetee]]]}))
 
 (m1p/interpolate
- {:dictionaries                                  ;; 2
-  {:i18n                                         ;; 3
-   (:en dictionaries)}}
- page-data)
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
 
-;;=>
-;; {:title "Log in to My site"
-;;  :text "Enter your email and we'll send you a code for login"
-;;  :form {:button {:disabled? true
-;;                  :spinner? false
-;;                  :text "Gimme"}
-;;         :inputs [{:on-input [[:assoc-in [:transient :email] :event/target.value]]
-;;                   :placeholder "Email"}]}}
+;;=> [:div.main [:h1 [:span "Hello, " [:strong "Internet"]]]]
 ```
-
-1. Calls to `m1p.core/interpolate` have been replaced with a reference tuple.
-   The `:i18n` keyword is not special: This tuple specifically says "perform
-   `lookup` in the `:i18n` dictionary with the key `login/title`, and pass
-   `{:site "My site"}` as params.
-2. `m1p.core/interpolate` takes a map of `:dictionaries` because you can have
-   several orthogonal dictionaries: one for i18n, one for theming, etc.
-3. The key under which a dictionary lives in the `:dictionaries` map is the key
-   you use in reference tuples to refer to keys from it.
-
-With `interpolate`, textual content has been decoupled from the data processing
-code. This enables you to write unit tests that don't fail on every minor copy
-tweak, and choose to realize textual content or not for various uses of the
-data. It also turns the dependency around such that the function that produced
-`page-data` does not need to known about dictionaries, locales, themes or
-related detials.
 
 ### Building dictionaries
 
 `m1p.core/prepare-dictionary` enables the use of dictionary functions, and front
 loads some processing for faster retrieval.
 
-<a id="ex7"></a>
+<a id="ex4"></a>
 ```clj
 (require '[m1p.core :as m1p])
 
@@ -190,10 +168,11 @@ loads some processing for faster retrieval.
 4. You can use dictionary functions anywhere in data structures. `:fn/get` gives
    you interpolation that isn't limited to outputting strings.
 
+<a id="custom-dictionary-functions"></a>
 ### Custom dictionary functions
 
 Dictionary functions can bring any number of new features to m1p dictionaries.
-We'll consider two examples that are common used in i18n tooling.
+We'll consider two examples that are commonly used in i18n tooling.
 
 #### Pluralization
 
@@ -204,7 +183,7 @@ supports.
 Here's how you can add a naive "0, 1, many"-style pluralization helper to a
 dictionary:
 
-<a id="ex8"></a>
+<a id="ex5"></a>
 ```clj
 (require '[m1p.core :as m1p])
 
@@ -217,24 +196,19 @@ dictionary:
    {:songs [:fn/plural "no songs" "one song" "{{:n}} songs"]}
    {:dictionary-fns {:fn/plural pluralize}}))
 
-(m1p/lookup dictionary :songs 0) ;;=> "no songs"
-(m1p/lookup dictionary :songs 1) ;;=> "one song"
-(m1p/lookup dictionary :songs 4) ;;=> "4 songs"
+(m1p/lookup {:dictionary dictionary} :songs 0) ;;=> "no songs"
+(m1p/lookup {:dictionary dictionary} :songs 1) ;;=> "one song"
+(m1p/lookup {:dictionary dictionary} :songs 4) ;;=> "4 songs"
 ```
 
-If using `m1p.core/interpolate`, replace the calls to `lookup` with reference
-tuples like so:
-
-<a id="ex8-1"></a>
-```clj
-[:i18n :songs 0]
-```
+`m1p.core/lookup` performs a single lookup just like the reference tuple
+`[dict-k :songs 0]` would do with `m1p.core/interpolate`.
 
 ### Date formatters
 
 Here's how you can use dictionary functions to format dates:
 
-<a id="ex9"></a>
+<a id="ex6"></a>
 ```clj
 (import '[java.time LocalDateTime]
         '[java.time.format DateTimeFormatter]
@@ -424,7 +398,7 @@ Returns the key `k` in `params` as passed to `m1p.core/lookup`.
 ### `(m1p.core/prepare-dictionary dictionary opt)`
 
 <a id="lookup"></a>
-### `(m1p.core/lookup dictionary k & [data])`
+### `(m1p.core/lookup opt k & [data])`
 
 <a id="interpolate"></a>
 ### `(m1p.core/interpolate opt data)`

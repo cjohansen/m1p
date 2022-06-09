@@ -5,83 +5,58 @@
 (require '[m1p.core :as m1p])
 
 (def dictionary
-  (m1p/prepare-dictionary
-   {:greeting [:fn/str "Hello, {{:greetee}}"]}))
+  {:header/title "Hello, world!"})
+
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title]]])
+
+;;=> [:div.main [:h1 "Hello, world!"]]
 
 ;; ex2
 
-(m1p/lookup dictionary :greeting {:greetee "World"})
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
 
 ;;=> "Hello, World"
+
+;; ex2-1
+
+(def dictionary
+  (m1p/prepare-dictionary
+   {:header/title [:fn/str "Hello, {{:greetee}}!"]}))
+
+;; ex2-2
+
+(def dictionary
+  (m1p/prepare-dictionary
+   {:header/title [:fn/str "Hello, {{:greetee}}!"]}))
+
+(m1p/interpolate
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+
+;;=> [:div.main [:h1 "Hello, Internet!"]]
 
 ;; ex3
 
 (def dictionary
   (m1p/prepare-dictionary
-   {:text [:span "Hello, " [:bold [:fn/str "{{:greetee}}"]]]}))
-
-(m1p/lookup dictionary :text {:greetee "World"})
-
-;;=> [:span "Hello, " [:bold "World"]]
-
-;; ex4
-
-(def dictionary
-  (m1p/prepare-dictionary
-   {:text [:span "Hello, " [:bold [:fn/get :greetee]]]}))
-
-(m1p/lookup dictionary :text {:greetee "World"})
-
-;;=> [:span "Hello, " [:bold "World"]]
-
-;; ex5
-
-(def dictionaries
-  {:en
-   (m1p/prepare-dictionary
-    {:login/title [:fn/str "Log in to {{:site}}"]
-     :login/text "Enter your email and we'll send you a code for login"
-     :login/button-text "Gimme"
-     :login/email-placeholder "Email"})})
-
-(def page-data
-  (let [locale :en
-        dict (get dictionaries locale)]
-    {:title (m1p/lookup dict :login/title {:site "My site"})
-     :text (m1p/lookup dict :login/text)
-     :form {:button {:disabled? true
-                     :spinner? false
-                     :text (m1p/lookup dict :login/button-text)}
-            :inputs [{:on-input [[:assoc-in [:transient :email] :event/target.value]]
-                      :placeholder (m1p/lookup dict :login/email-placeholder)}]}}))
-
-;; ex6
-
-(def page-data
-  {:title [:i18n :login/title {:site "My site"}] ;; 1
-   :text [:i18n :login/text]
-   :form {:button {:disabled? true
-                   :spinner? false
-                   :text [:i18n :login/button-text]}
-          :inputs [{:on-input [[:assoc-in [:transient :email] :event/target.value]]
-                    :placeholder [:i18n :login/email-placeholder]}]}})
+   {:header/title [:span "Hello, "
+                   [:strong [:fn/get :greetee]]]}))
 
 (m1p/interpolate
- {:dictionaries                                  ;; 2
-  {:i18n                                         ;; 3
-   (:en dictionaries)}}
- page-data)
+ {:dictionaries {:i18n dictionary}}
+ [:div.main
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
 
-;;=>
-;; {:title "Log in to My site"
-;;  :text "Enter your email and we'll send you a code for login"
-;;  :form {:button {:disabled? true
-;;                  :spinner? false
-;;                  :text "Gimme"}
-;;         :inputs [{:on-input [[:assoc-in [:transient :email] :event/target.value]]
-;;                   :placeholder "Email"}]}}
+;;=> [:div.main [:h1 [:span "Hello, " [:strong "Internet"]]]]
 
-;; ex7
+;; ex4
 
 (require '[m1p.core :as m1p])
 
@@ -98,7 +73,7 @@
                  [:a {:href [:fn/get :url]}      ;; 4
                   "Go here"]]}]))
 
-;; ex8
+;; ex5
 
 (require '[m1p.core :as m1p])
 
@@ -111,15 +86,11 @@
    {:songs [:fn/plural "no songs" "one song" "{{:n}} songs"]}
    {:dictionary-fns {:fn/plural pluralize}}))
 
-(m1p/lookup dictionary :songs 0) ;;=> "no songs"
-(m1p/lookup dictionary :songs 1) ;;=> "one song"
-(m1p/lookup dictionary :songs 4) ;;=> "4 songs"
+(m1p/lookup {:dictionary dictionary} :songs 0) ;;=> "no songs"
+(m1p/lookup {:dictionary dictionary} :songs 1) ;;=> "one song"
+(m1p/lookup {:dictionary dictionary} :songs 4) ;;=> "4 songs"
 
-;; ex8-1
-
-[:i18n :songs 0]
-
-;; ex9
+;; ex6
 
 (import '[java.time LocalDateTime]
         '[java.time.format DateTimeFormatter]
