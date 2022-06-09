@@ -190,10 +190,9 @@ how to do it with dictionary functions:
 
 (defn format-date [opt params pattern local-date]      ;; 1
   (when local-date
-    (let [locale (:locale opt)]                        ;; 2
-      (-> (DateTimeFormatter/ofPattern pattern)
-          (.withLocale (Locale. locale))
-          (.format local-date)))))
+    (-> (DateTimeFormatter/ofPattern pattern)
+        (.withLocale (Locale. (:locale opt)))          ;; 2
+        (.format local-date))))
 
 (def dictionary
   (m1p/prepare-dictionary
@@ -206,6 +205,8 @@ how to do it with dictionary functions:
   :dictionaries {:i18n dictionary}}
  {:text [:i18n :updated-at
          {:date (LocalDateTime/of 2022 6 8 9 37 12)}]})
+
+;;=> {:text "Last updated Wed Jun 8"}
 ```
 
 1. `format-date` uses Java libraries to format a local date. For ClojureScript

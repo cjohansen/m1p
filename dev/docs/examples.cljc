@@ -109,10 +109,9 @@
 
 (defn format-date [opt params pattern local-date]      ;; 1
   (when local-date
-    (let [locale (:locale opt)]                        ;; 2
-      (-> (DateTimeFormatter/ofPattern pattern)
-          (.withLocale (Locale. locale))
-          (.format local-date)))))
+    (-> (DateTimeFormatter/ofPattern pattern)
+        (.withLocale (Locale. (:locale opt)))          ;; 2
+        (.format local-date))))
 
 (def dictionary
   (m1p/prepare-dictionary
