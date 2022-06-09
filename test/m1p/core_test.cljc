@@ -59,7 +59,20 @@
              :description [:i18n :description {:url "/somewhere"
                                                :link-text [:i18n :here]}]})
            {:title [:h2 "Hei på deg!"]
-            :description [:div "Klikk " [:a {:href "/somewhere"} "her"]]}))))
+            :description [:div "Klikk " [:a {:href "/somewhere"} "her"]]})))
+
+  (testing "Complains about missing key"
+    (is (= (sut/interpolate
+            {:dictionaries {:i18n {}}}
+            [:i18n :k])
+           [:m1p.core/error "Missing dictionary key" :k nil])))
+
+  (testing "Custom missing key implementation"
+    (is (= (sut/interpolate
+            {:dictionaries {:i18n {}}
+             :on-missing-dictionary-key (fn [_ _ k] [:sad-panda k])}
+            [:i18n :k])
+           [:sad-panda :k]))))
 
 (deftest get-string-placeholders-test
   (testing "Finds all placeholders"

@@ -92,10 +92,14 @@
   ([opt dictionary k]
    (lookup opt dictionary k nil))
   ([opt dictionary k data]
-   (let [v (get dictionary k)]
-     (if (fn? v)
-       (v opt data)
-       v))))
+   (if (not (contains? dictionary k))
+     ((or (:on-missing-dictionary-key opt)
+          (constantly [::error "Missing dictionary key" k data]))
+      opt data k)
+     (let [v (get dictionary k)]
+       (if (fn? v)
+         (v opt data)
+         v)))))
 
 (defn interpolate
   "Walk `data` and replace references to dictionary keys with the result of

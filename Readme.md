@@ -461,10 +461,9 @@ test and developent, and to log the problem in production.
 Enables the use of dictionary functions in `dictionary`. `opt` is a map of
 options:
 
-- `:dictionaries` a map of `{dictionary-key dictionary}`. The `dictionary-k` can
-  be used in data passed to `m1p.core/interpolate` to look up keys in the
-  dictionary.
 - `:on-missing-dictionary-key` a function to call when attempting to interpolate
+  a dictionary key that can't be found. Will be called with `opts` from
+  `interpolate`, params, and the key.
 
 <a id="interpolate"></a>
 ### `(m1p.core/interpolate opt data)`
