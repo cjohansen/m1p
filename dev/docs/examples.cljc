@@ -8,20 +8,18 @@
   {:header/title "Hello, world!"})
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title]]])
+  [:h1 [:i18n :header/title]]]       ;; 1
+ {:dictionaries {:i18n dictionary}}) ;; 2
 
 ;;=> [:div.main [:h1 "Hello, world!"]]
 
 ;; ex2
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
-
-;;=> "Hello, World"
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;; ex2-1
 
@@ -36,9 +34,9 @@
    {:header/title [:fn/str "Hello, {{:greetee}}!"]}))
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;;=> [:div.main [:h1 "Hello, Internet!"]]
 
@@ -50,9 +48,9 @@
                    [:strong [:fn/get :greetee]]]}))
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;;=> [:div.main [:h1 [:span "Hello, " [:strong "Internet"]]]]
 
@@ -87,12 +85,12 @@
    {:dictionary-fns {:fn/plural pluralize}}))
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:ul
   [:li [:i18n :songs 0]]
   [:li [:i18n :songs 1]]
   [:li [:i18n :songs 2]]
-  [:li [:i18n :songs 4]]])
+  [:li [:i18n :songs 4]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;;=>
 ;; [:ul
@@ -120,10 +118,10 @@
    {:dictionary-fns {:fn/date format-date}}))           ;; 5
 
 (m1p/interpolate
- {:locale "en"                                          ;; 6
-  :dictionaries {:i18n dictionary}}
  {:text [:i18n :updated-at
-         {:date (LocalDateTime/of 2022 6 8 9 37 12)}]})
+         {:date (LocalDateTime/of 2022 6 8 9 37 12)}]}
+ {:locale "en"                                          ;; 6
+  :dictionaries {:i18n dictionary}})
 
 ;;=> {:text "Last updated Wed Jun 8"}
 
@@ -159,12 +157,35 @@
    {:dictionary-fns {:fn/date format-date}}))
 
 (m1p/interpolate
- {:locale "en"
-  :dictionaries {:i18n dictionary}}
  {:created [:i18n :created-at {:creator "Christian"
                                :date (LocalDateTime/of 2022 6 8 8 37 12)}]
-  :updated [:i18n :updated-at (LocalDateTime/of 2022 6 8 9 37 12)]})
+  :updated [:i18n :updated-at (LocalDateTime/of 2022 6 8 9 37 12)]}
+ {:locale "en"
+  :dictionaries {:i18n dictionary}})
 
 ;;=>
 ;; {:created "Created by Christian Wed Jun 8"
 ;;  :updated "Last updated Wed Jun 8"}
+
+;; ex9
+
+(def dictionary-opts
+  {:dictionary-fns {:fn/date format-date
+                    :fn/plural pluralize}})
+
+(def dictionaries
+  {:en (m1p/prepare-dictionary
+        {:title [:fn/str "Hello {{:display-name}}!"]}
+        dictionary-opts)
+
+   :nb (m1p/prepare-dictionary
+        {:title [:fn/str "Hei {{:display-name}}!"]}
+        dictionary-opts)})
+
+(def locale :nb)
+
+(m1p/interpolate
+ [:i18n :title {:display-name "Meep meep"}]
+ {:dictionaries {:i18n (get dictionaries locale)}})
+
+;;=> "Hei Meep meep!"

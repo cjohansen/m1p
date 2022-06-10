@@ -47,6 +47,9 @@
 (deftest interpolate-test
   (testing "Nests dictionary functions and dictionary lookups"
     (is (= (sut/interpolate
+            {:title [:i18n :title]
+             :description [:i18n :description {:url "/somewhere"
+                                               :link-text [:i18n :here]}]}
             {:dictionaries
              {:i18n
               (sut/prepare-dictionary
@@ -54,24 +57,21 @@
                 :here "her"
                 :description [:div "Klikk "
                               [:a {:href [:fn/get :url]}
-                               [:fn/get :link-text]]]})}}
-            {:title [:i18n :title]
-             :description [:i18n :description {:url "/somewhere"
-                                               :link-text [:i18n :here]}]})
+                               [:fn/get :link-text]]]})}})
            {:title [:h2 "Hei på deg!"]
             :description [:div "Klikk " [:a {:href "/somewhere"} "her"]]})))
 
   (testing "Complains about missing key"
     (is (= (sut/interpolate
-            {:dictionaries {:i18n {}}}
-            [:i18n :k])
+            [:i18n :k]
+            {:dictionaries {:i18n {}}})
            [:m1p.core/error "Missing dictionary key" :k nil])))
 
   (testing "Custom missing key implementation"
     (is (= (sut/interpolate
+            [:i18n :k]
             {:dictionaries {:i18n {}}
-             :on-missing-dictionary-key (fn [_ _ k] [:sad-panda k])}
-            [:i18n :k])
+             :on-missing-dictionary-key (fn [_ _ k] [:sad-panda k])})
            [:sad-panda :k]))))
 
 (deftest get-string-placeholders-test

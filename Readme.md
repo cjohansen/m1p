@@ -47,17 +47,18 @@ m1p works with [dictionaries](#dictionary) built from plain serializable maps:
   {:header/title "Hello, world!"})
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}} ;; 1
  [:div.main
-  [:h1 [:i18n :header/title]]])     ;; 2
+  [:h1 [:i18n :header/title]]]       ;; 1
+ {:dictionaries {:i18n dictionary}}) ;; 2
 
 ;;=> [:div.main [:h1 "Hello, world!"]]
 ```
 
-1. m1p can interpolate from multiple dictionaries at once. This example only has
-   one dictionary, the `:i18n` one.
-2. `[:i18n :header/title]` is a [reference tuple](#reference-tuple) that refers
+1. `[:i18n :header/title]` is a [reference tuple](#reference-tuple) that refers
    to the key `:header/title` in the `:i18n` dictionary.
+2. m1p can interpolate from multiple dictionaries at once. This example only has
+   one dictionary, the `:i18n` one.
+
 
 ### Where it gets interesting
 
@@ -68,9 +69,9 @@ the result back into our data:
 <a id="ex2"></a>
 ```clj
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]]
+ {:dictionaries {:i18n dictionary}})
 ```
 
 To achieve this we expanded the reference tuple to pass some data: `[:i18n
@@ -95,9 +96,9 @@ All in all, it looks like this:
    {:header/title [:fn/str "Hello, {{:greetee}}!"]}))
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;;=> [:div.main [:h1 "Hello, Internet!"]]
 ```
@@ -125,9 +126,9 @@ It just gets parameters:
                    [:strong [:fn/get :greetee]]]}))
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:div.main
-  [:h1 [:i18n :header/title {:greetee "Internet"}]]])
+  [:h1 [:i18n :header/title {:greetee "Internet"}]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;;=> [:div.main [:h1 [:span "Hello, " [:strong "Internet"]]]]
 ```
@@ -201,10 +202,10 @@ how to do it with dictionary functions:
    {:dictionary-fns {:fn/date format-date}}))           ;; 5
 
 (m1p/interpolate
- {:locale "en"                                          ;; 6
-  :dictionaries {:i18n dictionary}}
  {:text [:i18n :updated-at
-         {:date (LocalDateTime/of 2022 6 8 9 37 12)}]})
+         {:date (LocalDateTime/of 2022 6 8 9 37 12)}]}
+ {:locale "en"                                          ;; 6
+  :dictionaries {:i18n dictionary}})
 
 ;;=> {:text "Last updated Wed Jun 8"}
 ```
@@ -234,11 +235,11 @@ instead:
    {:dictionary-fns {:fn/date format-date}}))
 
 (m1p/interpolate
- {:locale "en"
-  :dictionaries {:i18n dictionary}}
  {:created [:i18n :created-at {:creator "Christian"
                                :date (LocalDateTime/of 2022 6 8 8 37 12)}]
-  :updated [:i18n :updated-at (LocalDateTime/of 2022 6 8 9 37 12)]})
+  :updated [:i18n :updated-at (LocalDateTime/of 2022 6 8 9 37 12)]}
+ {:locale "en"
+  :dictionaries {:i18n dictionary}})
 
 ;;=>
 ;; {:created "Created by Christian Wed Jun 8"
@@ -268,12 +269,12 @@ dictionary:
    {:dictionary-fns {:fn/plural pluralize}}))
 
 (m1p/interpolate
- {:dictionaries {:i18n dictionary}}
  [:ul
   [:li [:i18n :songs 0]]
   [:li [:i18n :songs 1]]
   [:li [:i18n :songs 2]]
-  [:li [:i18n :songs 4]]])
+  [:li [:i18n :songs 4]]]
+ {:dictionaries {:i18n dictionary}})
 
 ;;=>
 ;; [:ul
@@ -309,8 +310,8 @@ current locale and select the right dictionary to pass to `interpolate`:
 (def locale :nb)
 
 (m1p/interpolate
- {:dictionaries {:i18n (get dictionaries locale)}}
- [:i18n :title {:display-name "Meep meep"}])
+ [:i18n :title {:display-name "Meep meep"}]
+ {:dictionaries {:i18n (get dictionaries locale)}})
 
 ;;=> "Hei Meep meep!"
 ```
@@ -373,7 +374,7 @@ Where does the `dictionary-k` key come from? When calling
 `m1p.core/interpolate`, dictionaries are passed like so:
 
 ```clj
-(m1p.core/interpolate {:dictionaries {k dict} params)
+(m1p.core/interpolate params {:dictionaries {k dict}})
 ```
 
 The `k` is the value to use in lookup references in `params` to lookup keys in
@@ -434,9 +435,9 @@ And this interpolation:
 
 ```clj
 (m1p.core/interpolate
+  [:i18n :songs 0]
   {:dictionaries {:i18n dictionary}
-   :fn.str/on-missing-interpolation (fn [_ _ k] (str "No" k "!"))}
-  [:i18n :songs 0])
+   :fn.str/on-missing-interpolation (fn [_ _ k] (str "No" k "!"))})
 ```
 
 Will result in `pluralize` being called with the options map passed to
@@ -494,7 +495,7 @@ options:
   `interpolate`, params, and the key.
 
 <a id="interpolate"></a>
-### `(m1p.core/interpolate opt data)`
+### `(m1p.core/interpolate data opt)`
 
 Interpolate `data` with keys from `:dictionaries` in `opt`. Additional options
 in `opt` are passed to dictionary functions.

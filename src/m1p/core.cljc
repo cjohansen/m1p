@@ -117,7 +117,7 @@
   Where `dictionary-k` is a key in `:dictionaries`, e.g. `:i18n`, `k` is a key
   in said dictionary, and `params` are optional arbitrary data. `lookup` will be
   called with `opt` (as passed to `interpolate`), `params` and `k`."
-  ([{:keys [dictionaries] :as opt} data]
+  ([data {:keys [dictionaries] :as opt}]
    (let [opt (dissoc opt :dictionaries)]
      (walk/postwalk
       (fn [x]
