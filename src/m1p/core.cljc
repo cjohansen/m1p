@@ -1,5 +1,6 @@
 (ns m1p.core
-  (:require [clojure.string :as str]
+  (:require #?(:cljs [cljs.reader :as reader])
+            [clojure.string :as str]
             [clojure.walk :as walk]))
 
 (defn get-string-placeholders
@@ -10,11 +11,13 @@
   a keyword, e.g.:
 
   ```clj
-  #{[\"{{greetee}}\" :greetee]}
+  #{[\"{{:greetee}}\" :greetee]}
   ```"
   [s]
   (->> (re-seq #"\{\{([^\}]+)\}\}" s)
-       (map (fn [[_ k]] [(str "{{" k "}}") (read-string k)]))
+       (map (fn [[_ k]]
+              [(str "{{" k "}}") #?(:clj (read-string k)
+                                    :cljs (reader/read-string k))]))
        set))
 
 (defn interpolate-string [s interpolations & [opt]]
