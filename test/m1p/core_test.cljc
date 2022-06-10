@@ -199,3 +199,12 @@
               {:help-text [:fn/str "Help {{:who}}"]}])
             :login/help-text)
            "Help waaaah: :who"))))
+
+(deftest fn-param-test
+  (testing "fn/param inlines param"
+    (is (= ((sut/prepare-dict-val
+             {:dictionary-fns sut/default-dictionary-fns}
+             [:fn/str "Yo " [:fn/param] "!"])
+            {}
+            "World")
+           "Yo World!"))))

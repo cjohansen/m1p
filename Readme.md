@@ -218,6 +218,33 @@ how to do it with dictionary functions:
 5. "Install" the date formatter dictionary function.
 6. Options passed to `interpolate` are available in dictionary functions.
 
+Because the date argument is extracted from `params` with `:fn/get`, it must be
+named in the reference tuple. When dictionary keys only refer to a single value,
+you can use the dictionary function `:fn/param` to select the single argument
+instead:
+
+<a id="ex8"></a>
+```clj
+(def dictionary
+  (m1p/prepare-dictionary
+   {:updated-at [:fn/str "Last updated "
+                 [:fn/date "E MMM d" [:fn/param]]]
+    :created-at [:fn/str "Created by {{:creator}} "
+                 [:fn/date "E MMM d" [:fn/get :date]]]}
+   {:dictionary-fns {:fn/date format-date}}))
+
+(m1p/interpolate
+ {:locale "en"
+  :dictionaries {:i18n dictionary}}
+ {:created [:i18n :created-at {:creator "Christian"
+                               :date (LocalDateTime/of 2022 6 8 8 37 12)}]
+  :updated [:i18n :updated-at (LocalDateTime/of 2022 6 8 9 37 12)]})
+
+;;=>
+;; {:created "Created by Christian Wed Jun 8"
+;;  :updated "Last updated Wed Jun 8"}
+```
+
 #### Pluralization
 
 Pluralization is a hard problem to solve properly across all languages, but

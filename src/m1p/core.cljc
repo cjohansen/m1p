@@ -62,7 +62,9 @@
              (get params k
               ((or (:fn.get/on-missing-key opt)
                    (constantly (str "[Missing key " k "]")))
-               opt params k)))})
+               opt params k)))
+
+   :fn/param (fn [opt param] param)})
 
 (defn prepare-dictionary
   "Prepares dictionary for use with `lookup` and `interpolate`. `dictionary` is

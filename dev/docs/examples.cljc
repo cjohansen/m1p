@@ -147,3 +147,24 @@
 (m1p/interpolate
  {:dictionaries {:i18n (get dictionaries locale)}}
  [:i18n :title {:display-name "Meep meep"}])
+
+;; ex8
+
+(def dictionary
+  (m1p/prepare-dictionary
+   {:updated-at [:fn/str "Last updated "
+                 [:fn/date "E MMM d" [:fn/param]]]
+    :created-at [:fn/str "Created by {{:creator}} "
+                 [:fn/date "E MMM d" [:fn/get :date]]]}
+   {:dictionary-fns {:fn/date format-date}}))
+
+(m1p/interpolate
+ {:locale "en"
+  :dictionaries {:i18n dictionary}}
+ {:created [:i18n :created-at {:creator "Christian"
+                               :date (LocalDateTime/of 2022 6 8 8 37 12)}]
+  :updated [:i18n :updated-at (LocalDateTime/of 2022 6 8 9 37 12)]})
+
+;;=>
+;; {:created "Created by Christian Wed Jun 8"
+;;  :updated "Last updated Wed Jun 8"}
