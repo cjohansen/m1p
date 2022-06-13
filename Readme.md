@@ -287,11 +287,9 @@ dictionary:
 ### But what about multiple languages?
 
 Seems a little weird for an "i18n library" to not touch on how to switch between
-different languages and locales, no? As initially stated: m1p isn't really an
-i18n library.
-
-Turns out switching between dictionaries isn't the hard part: just check the
-current locale and select the right dictionary to pass to `interpolate`:
+different languages and locales, no? Turns out switching between dictionaries
+isn't the hard part: just check the current locale and select the right
+dictionary to pass to `interpolate`:
 
 ```clj
 (def dictionary-opts
