@@ -123,3 +123,26 @@
             {:kind :type-discrepancy
              :key :key2
              :dictionaries {:en :number :nb :string}}]))))
+
+(deftest find-misplaced-interpolation-test
+  (testing "Finds interpolation outside fn/str"
+    (is (= (sut/find-misplaced-interpolations
+            {:en (m1p/prepare-dictionary
+                  {:key1 "Hello {{:greetee}}"})})
+           [{:kind :misplaced-interpolation-syntax
+             :dictionary :en
+             :key :key1}])))
+
+  (testing "Finds interpolation nested inside fn/str"
+    (is (= (sut/find-misplaced-interpolations
+            {:en (m1p/prepare-dictionary
+                  {:key1 [:fn/str "Hello " [:strong "{{:greetee}}"]]})})
+           [{:kind :misplaced-interpolation-syntax
+             :dictionary :en
+             :key :key1}])))
+
+  (testing "Ignores correctly placed interpolation syntax"
+    (is (= (sut/find-misplaced-interpolations
+            {:en (m1p/prepare-dictionary
+                  {:key1 [:fn/str "Hello {{:greetee}}"]})})
+           []))))

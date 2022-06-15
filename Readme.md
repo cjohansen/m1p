@@ -329,16 +329,16 @@ builds, or similar.
 
 (def dicts
   {:en (m1p/prepare-dictionary
-          [#:home
-           {:title "Home page"
-            :text [:fn/str "Welcome {{:display-name}}"]}
+        [#:home
+         {:title "Home page"
+          :text [:fn/str "Welcome {{:display-name}}"]}
 
-           #:login
-           {:title "Log in"
-            :help-text [:span {}
-                        "Need help? "
-                        [:a {:href [:fn/get :url]}
-                         "Go here"]]}])
+         #:login
+         {:title "Log in"
+          :help-text [:span {}
+                      "Need help? "
+                      [:a {:href [:fn/get :url]}
+                       "Go here"]]}])
 
    :nb (m1p/prepare-dictionary
         [#:home
@@ -352,6 +352,7 @@ builds, or similar.
  (v/find-non-kw-keys dicts)
  (v/find-unqualified-keys dicts)
  (v/find-missing-keys dicts)
+ (v/find-misplaced-interpolations dicts)
  (v/find-type-discrepancies dicts)
  (v/find-interpolation-discrepancies dicts)
  (v/find-fn-get-param-discrepancies dicts))
@@ -360,7 +361,10 @@ builds, or similar.
 ;; [{:kind :missing-key
 ;;   :dictionary :nb
 ;;   :key :login/help-text}
-;;  {:kind :interpolation-discrepancy,
+;;  {:kind :misplaced-interpolation-syntax
+;;   :dictionary :nb
+;;   :key :home/text}
+;;  {:kind :interpolation-discrepancy
 ;;   :key :home/text
 ;;   :dictionaries {:en #{:display-name}
 ;;                  :nb #{}}}]
@@ -378,12 +382,16 @@ fit. For a more human consumable report, pass the data to
       (v/find-non-kw-keys dicts)
       (v/find-unqualified-keys dicts)
       (v/find-missing-keys dicts)
+      (v/find-misplaced-interpolations dicts)
       (v/find-type-discrepancies dicts)
       (v/find-interpolation-discrepancies dicts)
       (v/find-fn-get-param-discrepancies dicts))
      (v/print-report dicts))
 
 ;; Problems in :nb
+;;   String interpolation syntax outside :fn/str:
+;;     :home/text
+;;
 ;;   Missing keys:
 ;;     :login/help-text
 ;;

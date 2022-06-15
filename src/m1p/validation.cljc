@@ -15,6 +15,7 @@
   `:kind` of problem. Some validators include additional keys to contextualize
   the problem."
   (:require [clojure.string :as str]
+            [clojure.walk :as walk]
             [m1p.core :as m1p]))
 
 (defn find-non-kw-keys
@@ -63,6 +64,32 @@
 
 (defn get-val [v]
   (or (:m1p.core/value (meta v)) v))
+
+(defn find-stray-interpolations [v]
+  (->> v
+       (walk/postwalk
+        (fn [x]
+          (if (dfn? :fn/str x)
+            (remove string? x)
+            x)))
+       (tree-seq coll? identity)
+       (filter string?)
+       (mapcat m1p/get-string-placeholders)))
+
+(defn find-misplaced-interpolations
+  "Finds keys that use string interpolation syntax ({{:something}}) in strings
+  outside of `:fn/str`."
+  [dicts]
+  (mapcat
+   (fn [[d dict]]
+     (keep
+      (fn [[k v]]
+        (when (seq (find-stray-interpolations (get-val v)))
+          {:kind :misplaced-interpolation-syntax
+           :dictionary d
+           :key k}))
+      dict))
+   dicts))
 
 (defn get-type
   "Returns `:string` if the value is a string or a reference to `:fn/str`,
@@ -122,7 +149,7 @@
   (->> (map-dictionary-vals get-type dicts)
        (find-val-discrepancies :type-discrepancy)))
 
-(defn find-str-interpolations
+(defn find-string-interpolations
   "Recursively find all `:fn/str` references in `x`"
   [x]
   (->> (tree-seq coll? identity x)
@@ -138,7 +165,7 @@
   "Returns a list of all keys whose values use a different set of string
   interpolations."
   [dicts]
-  (->> (map-dictionary-vals find-str-interpolations dicts)
+  (->> (map-dictionary-vals find-string-interpolations dicts)
        (find-val-discrepancies :interpolation-discrepancy)))
 
 (defn find-fn-get-params
@@ -164,6 +191,7 @@
 (defmethod get-label :non-kw-key [_] "Non-keyword keys")
 (defmethod get-label :unqualified-key [_] "Unqualified keys")
 (defmethod get-label :missing-key [_] "Missing keys")
+(defmethod get-label :misplaced-interpolation-syntax [_] "String interpolation syntax outside :fn/str")
 (defmethod get-label :type-discrepancy [_] "Type discrepancies")
 (defmethod get-label :interpolation-discrepancy [_] "Interpolation discrepancies")
 (defmethod get-label :fn-get-param-discrepancy [_] ":fn/get param discrepancies")
