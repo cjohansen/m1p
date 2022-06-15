@@ -66,7 +66,7 @@
 
   (testing "Finds all interpolations"
     (is (= (sut/map-dictionary-vals
-            sut/find-str-interpolations
+            sut/find-string-interpolations
             {:en {:key1 "One"
                   :key2 [:div
                          "Hello "
@@ -81,7 +81,7 @@
 
   (testing "Finds all interpolations in prepared dictionaries"
     (is (= (sut/map-dictionary-vals
-            sut/find-str-interpolations
+            sut/find-string-interpolations
             {:en (m1p/prepare-dictionary
                   {:key1 "One"
                    :key2 [:div
