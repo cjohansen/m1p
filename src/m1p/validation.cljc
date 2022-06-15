@@ -66,6 +66,13 @@
   [x]
   (cond
     (or (string? x) (dfn? :fn/str x)) :string
+    (list? x) :list
+    (vector? x) :vector
+    (map? x) :map
+    (number? x) :number
+    (boolean? x) :boolean
+    (set? x) :set
+    (nil? x) :nil
     :else (type x)))
 
 (defn map-dictionary-vals
