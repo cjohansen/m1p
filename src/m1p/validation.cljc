@@ -14,7 +14,8 @@
   Validation functions return a list of maps of `:dictionary`, `:key`, and a
   `:kind` of problem. Some validators include additional keys to contextualize
   the problem."
-  (:require [m1p.core :as m1p]))
+  (:require [clojure.string :as str]
+            [m1p.core :as m1p]))
 
 (defn find-non-kw-keys
   "Return a list of all keys across all dictionaries that are not keywords."
@@ -145,3 +146,75 @@
   [dicts]
   (->> (map-dictionary-vals find-fn-get-params dicts)
        (find-val-discrepancies :fn-get-param-discrepancy)))
+
+(defmulti get-label
+  "Returns a label for the problem `:kind` suitable for use in the formatted
+  report."
+  (fn [kind] kind))
+
+(defmethod get-label :non-kw-key [_] "Non-keyword keys")
+(defmethod get-label :unqualified-key [_] "Unqualified keys")
+(defmethod get-label :missing-key [_] "Missing keys")
+(defmethod get-label :type-discrepancy [_] "Type discrepancies")
+(defmethod get-label :interpolation-discrepancy [_] "Interpolation discrepancies")
+(defmethod get-label :fn-get-param-discrepancy [_] ":fn/get param discrepancies")
+
+(defn format-keys [f xs]
+  (let [k-indent "    "]
+    (str k-indent
+         (->> (map f xs)
+              (map str)
+              sort
+              (str/join (str "\n" k-indent))))))
+
+(defn print-seq [sep seq]
+  (->> seq
+       (remove nil?)
+       (str/join sep)))
+
+(defn format-problems [dict xs]
+  (str "Problems in " dict "\n"
+       (->> (remove :data xs)
+            (group-by :kind)
+            (sort-by first)
+            (map (fn [[k xs]]
+                   (str "  " (get-label k) ":\n"
+                        (format-keys :key xs))))
+            (print-seq "\n\n"))))
+
+(defn format-cross-cutting-problems [label xs]
+  (when (seq xs)
+    (str label "\n"
+         (->> (group-by :key xs)
+              (sort-by first)
+              (map (fn [[key problems]]
+                     (str "  " key "\n"
+                          (->> problems
+                               (sort-by :dictionary)
+                               (map (fn [x]
+                                      (str "    " (:dictionary x) " " (:data x))))
+                               (str/join "\n")))))
+              (str/join "\n\n")))))
+
+(defn format-report
+  "Nicely format the list of problems as human-readable report"
+  [dicts xs]
+  (if (empty? xs)
+    (str "No problems!\nDictionaries: "
+         (str/join " " (sort (keys dicts))))
+    (->> [(->> (group-by :dictionary xs)
+               (sort-by first)
+               (map (fn [[k xs]] (format-problems k xs)))
+               (str/join "\n\n"))
+          (->> (filter :data xs)
+               (group-by :kind)
+               (sort-by first)
+               (map (fn [[k xs]] (format-cross-cutting-problems (get-label k) xs)))
+               (str/join "\n\n"))]
+         (print-seq "\n\n"))))
+
+(defn print-report
+  "Print a human-readable problem report to stdout"
+  [dicts xs]
+  (println (format-report dicts xs)))
+
