@@ -115,8 +115,8 @@ performed with [dictionary functions](#dictionary-functions).
 It is possible and encoured to register your own [custom dictionary
 functions](#custom-dictionary-functions).
 
-m1p's other built-in dictionary function, [`:fn/get`](#fn-get), is even simpler.
-It just gets parameters:
+Another one of m1p's built-in dictionary functions, [`:fn/get`](#fn-get), is
+even simpler. It just gets parameters:
 
 <a id="ex3"></a>
 ```clj
@@ -396,7 +396,8 @@ Available `fn-k`s are determined when calling `m1p.core/prepare-dictionary`:
 ```
 
 Any `k` in the `:dictionary-fns` map can be used in reference tuples in the
-dictionary to have the associated function called on retrieval.
+dictionary to have the associated function called on retrieval, in addition to
+built-in dictionary functions, see below.
 
 <a id="dictionary-functions"></a>
 ### Dictionary functions
@@ -481,6 +482,11 @@ The function will be called with an options map, `params` and the missing key.
 
 You might want to provide a custom function for this to throw exceptions during
 test and developent, and to log the problem in production.
+
+<a id="fn-param"></a>
+### `[:fn/param]`
+
+Returns the entire `params` as passed to `interpolate` in place.
 
 <a id="prepare-dictionary"></a>
 ### `(m1p.core/prepare-dictionary dictionary opt)`
