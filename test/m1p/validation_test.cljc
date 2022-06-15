@@ -1,6 +1,7 @@
 (ns m1p.validation-test
-  (:require [m1p.validation :as sut]
-            [clojure.test :refer [deftest is testing]]))
+  (:require [clojure.test :refer [deftest is testing]]
+            [m1p.core :as m1p]
+            [m1p.validation :as sut]))
 
 (deftest find-non-kw-keys-test
   (is (= (sut/find-non-kw-keys
@@ -52,6 +53,17 @@
             :nb {:key1 :string
                  :key3 :string}})))
 
+  (testing "Finds type of keys in prepared dictionary"
+    (is (= (sut/map-dictionary-vals
+            sut/get-type
+            {:en (m1p/prepare-dictionary
+                  {:key1 "One"
+                   :key2 [:fn/str "Two"]
+                   :key4 "Four"})})
+           {:en {:key1 :string
+                 :key2 :string
+                 :key4 :string}})))
+
   (testing "Finds all interpolations"
     (is (= (sut/map-dictionary-vals
             sut/find-str-interpolations
@@ -66,29 +78,70 @@
                  :key2 #{["{{:who}}" :who]
                          ["{{:number}}" :number]}}
             :nb {:key1 #{}
-                 :key2 #{["{{:number}}" :number]}}}))))
+                 :key2 #{["{{:number}}" :number]}}})))
+
+  (testing "Finds all interpolations in prepared dictionaries"
+    (is (= (sut/map-dictionary-vals
+            sut/find-str-interpolations
+            {:en (m1p/prepare-dictionary
+                  {:key1 "One"
+                   :key2 [:div
+                          "Hello "
+                          [:bold [:fn/str "{{:number}}"]]
+                          [:fn/str "How" " are " "{{:who}}"]]})})
+           {:en {:key1 #{}
+                 :key2 #{["{{:who}}" :who]
+                         ["{{:number}}" :number]}}}))))
 
 (deftest find-type-discrepancies-test
-  (is (= (sut/find-type-discrepancies
-          {:en {:key1 "String"
-                :key2 2
-                :key3 [:div]}
-           :nb {:key1 [:fn/str "Ok"]
-                :key2 "String"
-                :key3 '()}})
-         [{:dictionary :en
-           :key :key3
-           :data :vector
-           :kind :type-discrepancy}
-          {:dictionary :nb
-           :key :key3
-           :data :list
-           :kind :type-discrepancy}
-          {:dictionary :en
-           :key :key2
-           :data :number
-           :kind :type-discrepancy}
-          {:dictionary :nb
-           :key :key2
-           :data :string
-           :kind :type-discrepancy}])))
+  (testing "Finds type discrepancies"
+    (is (= (sut/find-type-discrepancies
+            {:en {:key1 "String"
+                  :key2 2
+                  :key3 [:div]}
+             :nb {:key1 [:fn/str "Ok"]
+                  :key2 "String"
+                  :key3 '()}})
+           [{:dictionary :en
+             :key :key3
+             :data :vector
+             :kind :type-discrepancy}
+            {:dictionary :nb
+             :key :key3
+             :data :list
+             :kind :type-discrepancy}
+            {:dictionary :en
+             :key :key2
+             :data :number
+             :kind :type-discrepancy}
+            {:dictionary :nb
+             :key :key2
+             :data :string
+             :kind :type-discrepancy}])))
+
+  (testing "Finds type discrepancies in prepared dictionaries"
+    (is (= (sut/find-type-discrepancies
+            {:en (m1p/prepare-dictionary
+                  {:key1 "String"
+                   :key2 2
+                   :key3 [:div]})
+             :nb (m1p/prepare-dictionary
+                  {:key1 [:fn/str "Ok"]
+                   :key2 "String"
+                   :key3 '()})})
+           [{:dictionary :en
+             :key :key3
+             :data :vector
+             :kind :type-discrepancy}
+            {:dictionary :nb
+             :key :key3
+             :data :list
+             :kind :type-discrepancy}
+            {:dictionary :en
+             :key :key2
+             :data :number
+             :kind :type-discrepancy}
+            {:dictionary :nb
+             :key :key2
+             :data :string
+             :kind :type-discrepancy}]))))

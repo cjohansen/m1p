@@ -61,6 +61,9 @@
   [f x]
   (and (vector? x) (= f (first x))))
 
+(defn get-val [v]
+  (or (:m1p.core/value (meta v)) v))
+
 (defn get-type
   "Returns `:string` if the value is a string or a reference to `:fn/str`,
   otherwise the value's `type`."
@@ -83,7 +86,7 @@
   (->> dicts
        (map (fn [[d dict]]
               [d (->> (map (fn [[k v]]
-                             [k (f v)])
+                             [k (f (get-val v))])
                            dict)
                       (into {}))]))
        (into {})))

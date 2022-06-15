@@ -52,7 +52,7 @@
   [opt v]
   (let [syms (tree-seq coll? identity v)]
     (if (some (set (keys (:dictionary-fns opt))) syms)
-      (partial resolve-val opt v)
+      (with-meta (partial resolve-val opt v) {::value v})
       v)))
 
 (def default-dictionary-fns
