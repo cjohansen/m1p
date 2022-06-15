@@ -343,7 +343,7 @@ builds, or similar.
    :nb (m1p/prepare-dictionary
         [#:home
          {:title "Hjemmeside"
-          :text "Welcome {{:display-name}}"}
+          :text "Welcome {{:display-name}}"} ;; Missing [:fn/str ,,,]
 
          #:login
          {:title "Logg inn"}])})
@@ -356,18 +356,15 @@ builds, or similar.
  (v/find-interpolation-discrepancies dicts)
  (v/find-fn-get-param-discrepancies dicts))
 
+
 ;;=>
-;; ({:kind :missing-key
+;; [{:kind :missing-key
 ;;   :dictionary :nb
 ;;   :key :login/help-text}
-;;  {:dictionary :en
+;;  {:kind :interpolation-discrepancy
 ;;   :key :home/text
-;;   :data #{["{{:display-name}}" :display-name]}
-;;   :kind :interpolation-discrepancy}
-;;  {:dictionary :nb
-;;   :key :home/text
-;;   :data #{}
-;;   :kind :interpolation-discrepancy})
+;;   :dictionaries {:en #{["{{:display-name}}" :display-name]}
+;;                  :nb #{}}}]
 ```
 
 All the validation functions return a list of potential problems in your

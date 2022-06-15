@@ -107,7 +107,12 @@
                            :key k
                            :data (get dict k)})))))
        (filter #(< 1 (count (set (map :data %)))))
-       (mapcat #(map (fn [x] (assoc x :kind kind)) %))))
+       (map (fn [xs]
+              {:kind kind
+               :key (:key (first xs))
+               :dictionaries (->> xs
+                                  (map (juxt :dictionary :data))
+                                  (into {}))}))))
 
 (defn find-type-discrepancies
   "Returns a list of all keys whose type is not the same across all dictionaries.
@@ -185,18 +190,15 @@
             (print-seq "\n\n"))))
 
 (defn format-cross-cutting-problems [label xs]
-  (when (seq xs)
-    (str label "\n"
-         (->> (group-by :key xs)
-              (sort-by first)
-              (map (fn [[key problems]]
-                     (str "  " key "\n"
-                          (->> problems
-                               (sort-by :dictionary)
-                               (map (fn [x]
-                                      (str "    " (:dictionary x) " " (:data x))))
-                               (str/join "\n")))))
-              (str/join "\n\n")))))
+  (str label "\n"
+       (->> (sort-by :key xs)
+            (map (fn [problem]
+                   (str "  " (:key problem) "\n"
+                        (->> (:dictionaries problem)
+                             (map (fn [[dict data]]
+                                    (str "    " dict " " data)))
+                             (str/join "\n")))))
+            (str/join "\n\n"))))
 
 (defn format-report
   "Nicely format the list of problems as human-readable report"
@@ -204,12 +206,12 @@
   (if (empty? problems)
     (str "No problems!\nDictionaries: "
          (str/join " " (sort (keys dicts))))
-    (->> [(->> (remove :data problems)
+    (->> [(->> (remove :dictionaries problems)
                (group-by :dictionary)
                (sort-by first)
                (map (fn [[k problems]] (format-problems k problems)))
                (str/join "\n\n"))
-          (->> (filter :data problems)
+          (->> (filter :dictionaries problems)
                (group-by :kind)
                (sort-by first)
                (map (fn [[k problems]] (format-cross-cutting-problems (get-label k) problems)))

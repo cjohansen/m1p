@@ -102,22 +102,12 @@
              :nb {:key1 [:fn/str "Ok"]
                   :key2 "String"
                   :key3 '()}})
-           [{:dictionary :en
+           [{:kind :type-discrepancy
              :key :key3
-             :data :vector
-             :kind :type-discrepancy}
-            {:dictionary :nb
-             :key :key3
-             :data :list
-             :kind :type-discrepancy}
-            {:dictionary :en
+             :dictionaries {:en :vector, :nb :list}}
+            {:kind :type-discrepancy
              :key :key2
-             :data :number
-             :kind :type-discrepancy}
-            {:dictionary :nb
-             :key :key2
-             :data :string
-             :kind :type-discrepancy}])))
+             :dictionaries {:en :number :nb :string}}])))
 
   (testing "Finds type discrepancies in prepared dictionaries"
     (is (= (sut/find-type-discrepancies
@@ -129,19 +119,9 @@
                   {:key1 [:fn/str "Ok"]
                    :key2 "String"
                    :key3 '()})})
-           [{:dictionary :en
+           [{:kind :type-discrepancy
              :key :key3
-             :data :vector
-             :kind :type-discrepancy}
-            {:dictionary :nb
-             :key :key3
-             :data :list
-             :kind :type-discrepancy}
-            {:dictionary :en
+             :dictionaries {:en :vector, :nb :list}}
+            {:kind :type-discrepancy
              :key :key2
-             :data :number
-             :kind :type-discrepancy}
-            {:dictionary :nb
-             :key :key2
-             :data :string
-             :kind :type-discrepancy}]))))
+             :dictionaries {:en :number :nb :string}}]))))
