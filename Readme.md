@@ -356,14 +356,13 @@ builds, or similar.
  (v/find-interpolation-discrepancies dicts)
  (v/find-fn-get-param-discrepancies dicts))
 
-
 ;;=>
 ;; [{:kind :missing-key
 ;;   :dictionary :nb
 ;;   :key :login/help-text}
-;;  {:kind :interpolation-discrepancy
+;;  {:kind :interpolation-discrepancy,
 ;;   :key :home/text
-;;   :dictionaries {:en #{["{{:display-name}}" :display-name]}
+;;   :dictionaries {:en #{:display-name}
 ;;                  :nb #{}}}]
 ```
 
@@ -390,7 +389,7 @@ fit. For a more human consumable report, pass the data to
 ;;
 ;; Interpolation discrepancies
 ;;   :home/text
-;;     :en #{["{{:display-name}}" :display-name]}
+;;     :en #{:display-name}
 ;;     :nb #{}
 ```
 

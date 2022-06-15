@@ -75,10 +75,9 @@
              :nb {:key1 "One"
                   :key2 [:fn/str "{{:number}}"]}})
            {:en {:key1 #{}
-                 :key2 #{["{{:who}}" :who]
-                         ["{{:number}}" :number]}}
+                 :key2 #{:who :number}}
             :nb {:key1 #{}
-                 :key2 #{["{{:number}}" :number]}}})))
+                 :key2 #{:number}}})))
 
   (testing "Finds all interpolations in prepared dictionaries"
     (is (= (sut/map-dictionary-vals
@@ -90,8 +89,7 @@
                           [:bold [:fn/str "{{:number}}"]]
                           [:fn/str "How" " are " "{{:who}}"]]})})
            {:en {:key1 #{}
-                 :key2 #{["{{:who}}" :who]
-                         ["{{:number}}" :number]}}}))))
+                 :key2 #{:who :number}}}))))
 
 (deftest find-type-discrepancies-test
   (testing "Finds type discrepancies"

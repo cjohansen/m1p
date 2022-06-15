@@ -130,7 +130,8 @@
        (mapcat (fn [v]
                  (->> (drop 1 v)
                       (filter string?)
-                      (mapcat m1p/get-string-placeholders))))
+                      (mapcat m1p/get-string-placeholders)
+                      (map second))))
        set))
 
 (defn find-interpolation-discrepancies
