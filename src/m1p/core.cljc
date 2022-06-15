@@ -24,10 +24,11 @@
   (->> (get-string-placeholders s)
        (reduce (fn [s [ph k]]
                  (str/replace s ph
-                  (str (get interpolations k
-                            ((or (:fn.str/on-missing-interpolation opt)
-                                 (constantly (str "[Missing interpolation key " k "]")))
-                             opt interpolations k)))))
+                  (if (contains? interpolations k)
+                    (str (get interpolations k))
+                    ((or (:fn.str/on-missing-interpolation opt)
+                         (constantly (str "[Missing interpolation key " k "]")))
+                     opt interpolations k))))
                s)))
 
 (defn resolve-val
@@ -62,10 +63,11 @@
                   str/join))
 
    :fn/get (fn [opt params k]
-             (get params k
-              ((or (:fn.get/on-missing-key opt)
-                   (constantly (str "[Missing key " k "]")))
-               opt params k)))
+             (if (contains? params k)
+               (get params k)
+               ((or (:fn.get/on-missing-key opt)
+                    (constantly (str "[Missing key " k "]")))
+                opt params k)))
 
    :fn/param (fn [opt param] param)})
 
