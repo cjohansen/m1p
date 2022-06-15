@@ -374,7 +374,7 @@ All the validation functions return a list of potential problems in your
 dictionaries. The data can be used to generate warnings and/or errors as you see
 fit. For a more human consumable report, pass the data to
 `m1p.validation/print-report` (which formats the data with
-`m1p.validation/format-report` and prints it:
+`m1p.validation/format-report` and prints it):
 
 <a id="ex11"></a>
 ```clj
