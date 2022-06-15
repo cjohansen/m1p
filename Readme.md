@@ -145,14 +145,14 @@ loads some processing for faster retrieval.
 (def en-dictionary
   (m1p/prepare-dictionary
    [#:home
-    {:title "Home page"                          ;; 1
-     :text [:fn/str "Welcome {{display-name}}"]} ;; 2
+    {:title "Home page"                           ;; 1
+     :text [:fn/str "Welcome {{:display-name}}"]} ;; 2
 
     #:login
     {:title "Log in"
-     :help-text [:span {}                        ;; 3
+     :help-text [:span {}                         ;; 3
                  "Need help? "
-                 [:a {:href [:fn/get :url]}      ;; 4
+                 [:a {:href [:fn/get :url]}       ;; 4
                   "Go here"]]}]))
 ```
 
@@ -312,6 +312,89 @@ dictionary to pass to `interpolate`:
  {:dictionaries {:i18n (get dictionaries locale)}})
 
 ;;=> "Hei Meep meep!"
+```
+
+## Parity tests
+
+Because dictionaries will be used interchangeably, it is a good idea to test
+them for parity. The `m1p.validation` namespace contains several functions that
+can detect common problems. You can combine these however you want, and possibly
+add some of your own and perform assertions on them in your test suite, during
+builds, or similar.
+
+<a id="ex10"></a>
+```clj
+(require '[m1p.core :as m1p]
+         '[m1p.validation :as v])
+
+(def dicts
+  {:en (m1p/prepare-dictionary
+          [#:home
+           {:title "Home page"
+            :text [:fn/str "Welcome {{:display-name}}"]}
+
+           #:login
+           {:title "Log in"
+            :help-text [:span {}
+                        "Need help? "
+                        [:a {:href [:fn/get :url]}
+                         "Go here"]]}])
+
+   :nb (m1p/prepare-dictionary
+        [#:home
+         {:title "Hjemmeside"
+          :text "Welcome {{:display-name}}"}
+
+         #:login
+         {:title "Logg inn"}])})
+
+(concat
+ (v/find-non-kw-keys dicts)
+ (v/find-unqualified-keys dicts)
+ (v/find-missing-keys dicts)
+ (v/find-type-discrepancies dicts)
+ (v/find-interpolation-discrepancies dicts)
+ (v/find-fn-get-param-discrepancies dicts))
+
+;;=>
+;; ({:kind :missing-key
+;;   :dictionary :nb
+;;   :key :login/help-text}
+;;  {:dictionary :en
+;;   :key :home/text
+;;   :data #{["{{:display-name}}" :display-name]}
+;;   :kind :interpolation-discrepancy}
+;;  {:dictionary :nb
+;;   :key :home/text
+;;   :data #{}
+;;   :kind :interpolation-discrepancy})
+```
+
+All the validation functions return a list of potential problems in your
+dictionaries. The data can be used to generate warnings and/or errors as you see
+fit. For a more human consumable report, pass the data to
+`m1p.validation/print-report` (which formats the data with
+`m1p.validation/format-report` and prints it:
+
+<a id="ex11"></a>
+```clj
+(->> (concat
+      (v/find-non-kw-keys dicts)
+      (v/find-unqualified-keys dicts)
+      (v/find-missing-keys dicts)
+      (v/find-type-discrepancies dicts)
+      (v/find-interpolation-discrepancies dicts)
+      (v/find-fn-get-param-discrepancies dicts))
+     (v/print-report dicts))
+
+;; Problems in :nb
+;;   Missing keys:
+;;     :login/help-text
+;;
+;; Interpolation discrepancies
+;;   :home/text
+;;     :en #{["{{:display-name}}" :display-name]}
+;;     :nb #{}
 ```
 
 ## Reference
@@ -510,9 +593,74 @@ in `opt` are passed to dictionary functions.
 Lookup a single key `k` from the `dictionary`. `opt` is passed to dictionary
 functions.
 
+## Dictionary validation
+
+Functions that finds common problems in dictionaries that are to be used
+interchangeably. In all these functions, `dicts` is a map of dictionaries to be
+compared, e.g. `{:en dict, :nb dict}`. All functions return a list of problems
+as maps with the keys `:dictionary` (e.g. `:en`), `:key`, `:kind` (the kind of
+problem), and optionally `:data`. Feel free to create your own validation
+functions that work on the same data structures.
+
+<a id="find-non-kw-keys"></a>
+### `(m1p.validation/find-non-kw-keys dicts)`
+
+Return a list of all keys across all dictionaries that are not keywords.
+
+<a id="find-unqualified-keys"></a>
+### `(m1p.validation/find-unqualified-keys dicts)`
+
+Return a list of all keys across all dictionaries that don't have a namespace.
+
+<a id="find-missing-keys"></a>
+### `(m1p.validation/find-missing-keys dicts)`
+
+Finds all keys used across all dictionaries and returns a list of keys missing
+from individual dictionaries.
+
+<a id="find-type-discrepancies"></a>
+### `(m1p.validation/find-type-discrepancies dicts)`
+
+Returns a list of all keys whose type is not the same across all dictionaries.
+The list will include one entry per dictionary for each key with type
+discrepancies.
+
+<a id="find-interpolation-discrepancies"></a>
+### `(m1p.validation/find-interpolation-discrepancies dicts)`
+
+Returns a list of all keys whose values use a different set of string
+interpolations.
+
+<a id="find-fn-get-param-discrepancies"></a>
+### `(m1p.validation/find-fn-get-param-discrepancies dicts)`
+
+Returns a list of all keys whose values use a different set of parameters with
+`:fn/get`.
+
+<a id="get-label"></a>
+### `(m1p.validation/get-label dicts)`
+
+A multi-method that returns a string label for the printed report for a `:kind`.
+If you add your own validation functions, implement this to label your custom
+problems, so `format-report` and `print-report` can treat your problems like
+m1p's own:
+
+```clj
+(defmethod m1p.validation/get-label :my-custom-problem [_] "Custom problem")
+```
+
+<a id="format-report"></a>
+### `(m1p.validation/format-report dicts problems)`
+
+Formats problems in a human-readable string.
+
+<a id="print-report"></a>
+### `(m1p.validation/print-report dicts problems)`
+
+Prints the report formatted by `m1p.validation/format-report`.
+
 ## License
 
 Copyright © 2022 Christian Johansen & [Magnar Sveen](https://github.com/magnars)
-
 Distributed under the Eclipse Public License either version 1.0 or (at your
 option) any later version.

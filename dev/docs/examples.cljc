@@ -61,14 +61,14 @@
 (def en-dictionary
   (m1p/prepare-dictionary
    [#:home
-    {:title "Home page"                          ;; 1
-     :text [:fn/str "Welcome {{display-name}}"]} ;; 2
+    {:title "Home page"                           ;; 1
+     :text [:fn/str "Welcome {{:display-name}}"]} ;; 2
 
     #:login
     {:title "Log in"
-     :help-text [:span {}                        ;; 3
+     :help-text [:span {}                         ;; 3
                  "Need help? "
-                 [:a {:href [:fn/get :url]}      ;; 4
+                 [:a {:href [:fn/get :url]}       ;; 4
                   "Go here"]]}]))
 
 ;; ex5
@@ -189,3 +189,70 @@
  {:dictionaries {:i18n (get dictionaries locale)}})
 
 ;;=> "Hei Meep meep!"
+
+;; ex10
+
+(require '[m1p.core :as m1p]
+         '[m1p.validation :as v])
+
+(def dicts
+  {:en (m1p/prepare-dictionary
+          [#:home
+           {:title "Home page"
+            :text [:fn/str "Welcome {{:display-name}}"]}
+
+           #:login
+           {:title "Log in"
+            :help-text [:span {}
+                        "Need help? "
+                        [:a {:href [:fn/get :url]}
+                         "Go here"]]}])
+
+   :nb (m1p/prepare-dictionary
+        [#:home
+         {:title "Hjemmeside"
+          :text "Welcome {{:display-name}}"}
+
+         #:login
+         {:title "Logg inn"}])})
+
+(concat
+ (v/find-non-kw-keys dicts)
+ (v/find-unqualified-keys dicts)
+ (v/find-missing-keys dicts)
+ (v/find-type-discrepancies dicts)
+ (v/find-interpolation-discrepancies dicts)
+ (v/find-fn-get-param-discrepancies dicts))
+
+;;=>
+;; ({:kind :missing-key
+;;   :dictionary :nb
+;;   :key :login/help-text}
+;;  {:dictionary :en
+;;   :key :home/text
+;;   :data #{["{{:display-name}}" :display-name]}
+;;   :kind :interpolation-discrepancy}
+;;  {:dictionary :nb
+;;   :key :home/text
+;;   :data #{}
+;;   :kind :interpolation-discrepancy})
+
+;; ex11
+
+(->> (concat
+      (v/find-non-kw-keys dicts)
+      (v/find-unqualified-keys dicts)
+      (v/find-missing-keys dicts)
+      (v/find-type-discrepancies dicts)
+      (v/find-interpolation-discrepancies dicts)
+      (v/find-fn-get-param-discrepancies dicts))
+     (v/print-report dicts))
+
+;; Problems in :nb
+;;   Missing keys:
+;;     :login/help-text
+;;
+;; Interpolation discrepancies
+;;   :home/text
+;;     :en #{["{{:display-name}}" :display-name]}
+;;     :nb #{}

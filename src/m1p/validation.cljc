@@ -177,8 +177,7 @@
 
 (defn format-problems [dict xs]
   (str "Problems in " dict "\n"
-       (->> (remove :data xs)
-            (group-by :kind)
+       (->> (group-by :kind xs)
             (sort-by first)
             (map (fn [[k xs]]
                    (str "  " (get-label k) ":\n"
@@ -201,23 +200,24 @@
 
 (defn format-report
   "Nicely format the list of problems as human-readable report"
-  [dicts xs]
-  (if (empty? xs)
+  [dicts problems]
+  (if (empty? problems)
     (str "No problems!\nDictionaries: "
          (str/join " " (sort (keys dicts))))
-    (->> [(->> (group-by :dictionary xs)
+    (->> [(->> (remove :data problems)
+               (group-by :dictionary)
                (sort-by first)
-               (map (fn [[k xs]] (format-problems k xs)))
+               (map (fn [[k problems]] (format-problems k problems)))
                (str/join "\n\n"))
-          (->> (filter :data xs)
+          (->> (filter :data problems)
                (group-by :kind)
                (sort-by first)
-               (map (fn [[k xs]] (format-cross-cutting-problems (get-label k) xs)))
+               (map (fn [[k problems]] (format-cross-cutting-problems (get-label k) problems)))
                (str/join "\n\n"))]
          (print-seq "\n\n"))))
 
 (defn print-report
   "Print a human-readable problem report to stdout"
-  [dicts xs]
-  (println (format-report dicts xs)))
+  [dicts problems]
+  (println (format-report dicts problems)))
 
