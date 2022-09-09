@@ -72,7 +72,26 @@
             [:i18n :k]
             {:dictionaries {:i18n {}}
              :on-missing-dictionary-key (fn [_ _ k] [:sad-panda k])})
-           [:sad-panda :k]))))
+           [:sad-panda :k])))
+
+  (testing "Wraps exceptions with useful info"
+    (is (= (try
+             (sut/interpolate
+              {:title [:i18n :title {:date nil}]}
+              {:dictionaries
+               {:i18n
+                (sut/prepare-dictionary
+                 {:title [:h2 "I dag er det " [:i18n/custom [:fn/param]] "!"]}
+                 {:dictionary-fns {:i18n/custom (fn [& _] (throw (Exception. "BOOM!")))}})}})
+             (catch Exception e
+               [::exception (ex-data e)
+                (some-> e .getMessage)
+                (some-> e .getCause .getMessage)]))
+           [::exception {:fn :i18n/custom
+                         :lookup-key :title
+                         :data {:date nil}}
+            "Exception when resolving val for :title"
+            "BOOM!"]))))
 
 (deftest get-string-placeholders-test
   (testing "Finds all placeholders"
