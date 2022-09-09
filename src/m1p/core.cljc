@@ -37,7 +37,7 @@
   `dictionary-fns`. The function will then be called with `opt`, `params`, and
   the rest of the values from the vector. See m1p's Readme for more about
   dictionary functions."
-  [{:keys [dictionary-fns] :as opt} v lookup-opt data]
+  [{:keys [dictionary-fns exception-handler] :as opt} v lookup-opt data]
   (walk/postwalk
    (fn [x]
      (if (and (vector? x)
@@ -45,12 +45,15 @@
        (try
          (apply (get dictionary-fns (first x)) lookup-opt data (rest x))
          (catch #?(:clj Exception :cljs :default) e
-           (let [lookup-key (::lookup-key opt)]
-             (throw (ex-info (str "Exception when resolving val for " lookup-key)
+           (let [lookup-key (::lookup-key opt)
+                 ex (ex-info (str "Exception when resolving val for " lookup-key)
                              {:fn (first x)
                               :lookup-key lookup-key
                               :data data}
-                             e)))))
+                             e)]
+             (if exception-handler
+               (exception-handler ex)
+               (throw ex)))))
        x))
    v))
 

@@ -585,6 +585,16 @@ options:
   a dictionary key that can't be found. Will be called with `opts` from
   `interpolate`, params, and the key.
 
+- `:exception-handler` a function to call when a dictionary function throws an
+  exception. The handler receives an ex-info with ex-data in this shape:
+
+      ```clj
+      {:fn, :lookup-key, :data}
+      ```
+
+  The handler function should return the value to interpolate in place of the
+  failed call. Popular option: Logging the error and returning `nil`.
+
 <a id="interpolate"></a>
 ### `(m1p.core/interpolate data opt)`
 

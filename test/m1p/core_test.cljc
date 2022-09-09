@@ -91,7 +91,19 @@
                          :lookup-key :title
                          :data {:date nil}}
             "Exception when resolving val for :title"
-            "BOOM!"]))))
+            "BOOM!"])))
+
+  (testing "Uses exception-handler when given"
+    (is (= (sut/interpolate
+            {:title [:i18n :title {:date nil}]}
+            {:dictionaries
+             {:i18n
+              (sut/prepare-dictionary
+               {:title [:h2 "I dag er det " [:i18n/custom [:fn/param]] "!"]}
+               {:dictionary-fns {:i18n/custom (fn [& _] (throw (Exception. "BOOM!")))}
+                :exception-handler (fn [e]
+                                     (str "[:oops " (:lookup-key (ex-data e)) "]"))})}})
+           {:title [:h2 "I dag er det " "[:oops :title]" "!"]}))))
 
 (deftest get-string-placeholders-test
   (testing "Finds all placeholders"
