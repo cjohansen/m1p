@@ -5,6 +5,20 @@ than can be used for i18n (or just externalizing textual content for a single
 language), theming, and similar use cases. Some assembly required. Batteries not
 included. Bring your own bling.
 
+## Install
+
+With tools.deps:
+
+```clj
+no.cjohansen/m1p {:mvn/version "2022.11.14"}
+```
+
+With Leiningen:
+
+```clj
+[no.cjohansen/m1p "2022.11.14"]
+```
+
 ## m1p's core value proposition
 
 m1p makes it possible to loosely couple data processing code from textual

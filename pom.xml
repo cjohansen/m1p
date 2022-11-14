@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>no.cjohansen</groupId>
+  <artifactId>m1p</artifactId>
+  <version>2022.11.14</version>
+  <name>m1p</name>
+  <dependencies>
+  </dependencies>
+  <build>
+    <sourceDirectory>src</sourceDirectory>
+  </build>
+  <repositories>
+    <repository>
+      <id>clojars</id>
+      <url>https://repo.clojars.org/</url>
+    </repository>
+  </repositories>
+  <distributionManagement>
+    <repository>
+      <id>clojars</id>
+      <name>Clojars repository</name>
+      <url>https://clojars.org/repo</url>
+    </repository>
+  </distributionManagement>
+  <description>DIY toolkit for data-driven i18n, theming, and other "flavor" content.</description>
+  <url>https://github.com/cjohansen/m1p</url>
+  <licenses>
+    <license>
+      <name>EPL</name>
+      <url>https://opensource.org/licenses/EPL-2.0</url>
+    </license>
+  </licenses>
+  <scm>
+    <connection>scm:git:git://github.com/cjohansen/m1p.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/cjohansen/m1p.git</developerConnection>
+    <tag>v2022.11.14</tag>
+    <url>https://github.com/cjohansen/m1p</url>
+  </scm>
+</project>
