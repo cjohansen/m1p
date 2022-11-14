@@ -10,13 +10,13 @@ included. Bring your own bling.
 With tools.deps:
 
 ```clj
-no.cjohansen/m1p {:mvn/version "2022.11.14"}
+no.cjohansen/m1p {:mvn/version "2022.11.15"}
 ```
 
 With Leiningen:
 
 ```clj
-[no.cjohansen/m1p "2022.11.14"]
+[no.cjohansen/m1p "2022.11.15"]
 ```
 
 ## m1p's core value proposition
