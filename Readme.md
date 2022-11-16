@@ -1,7 +1,7 @@
 # m1p: Map interpolation and DIY i18n++
 
 m1p (short for "map" in the tradition of i18n) is a map interpolation library
-than can be used for i18n (or just externalizing textual content for a single
+that can be used for i18n (or just externalizing textual content for a single
 language), theming, and similar use cases. Some assembly required. Batteries not
 included. Bring your own bling.
 
