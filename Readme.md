@@ -126,7 +126,7 @@ performed with [dictionary functions](#dictionary-functions).
 
 `[:fn/str "Hello, {{:greetee}}"]` references the built-in dictionary function
 [`:fn/str`](#fn-str), which performs classic mustachioed string interpolation.
-It is possible and encoured to register your own [custom dictionary
+It is possible and encouraged to register your own [custom dictionary
 functions](#custom-dictionary-functions).
 
 Another one of m1p's built-in dictionary functions, [`:fn/get`](#fn-get), is
