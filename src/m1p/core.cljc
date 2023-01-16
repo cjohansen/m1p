@@ -43,7 +43,7 @@
      (if (and (vector? x)
               (contains? dictionary-fns (first x)))
        (try
-         (apply (get dictionary-fns (first x)) lookup-opt data (rest x))
+         (apply (get dictionary-fns (first x)) (assoc lookup-opt ::opt opt) data (rest x))
          (catch #?(:clj Exception :cljs :default) e
            (let [lookup-key (::lookup-key opt)
                  ex (ex-info (str "Exception when resolving val for " lookup-key)
