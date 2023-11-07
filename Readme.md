@@ -595,10 +595,6 @@ Returns the entire `params` as passed to `interpolate` in place.
 Enables the use of dictionary functions in `dictionary`. `opt` is a map of
 options:
 
-- `:on-missing-dictionary-key` a function to call when attempting to interpolate
-  a dictionary key that can't be found. Will be called with `opts` from
-  `interpolate`, params, and the key.
-
 - `:exception-handler` a function to call when a dictionary function throws an
   exception. The handler receives an ex-info with ex-data in this shape:
 
@@ -612,14 +608,29 @@ options:
 <a id="interpolate"></a>
 ### `(m1p.core/interpolate data opt)`
 
-Interpolate `data` with keys from `:dictionaries` in `opt`. Additional options
-in `opt` are passed to dictionary functions.
+Interpolate `data` with keys from `:dictionaries` in `opt`.
+
+Supported options:
+
+- `:dictionaries` the dictionaries to interpolate from
+- `:on-missing-dictionary-key` a function to call when attempting to interpolate
+  a dictionary key that can't be found. Will be called with `opts` from
+  `interpolate`, params, and the key.
+
+Additional options in `opt` are passed to dictionary functions.
 
 <a id="lookup"></a>
 ### `(m1p.core/lookup opt dictionary k & [params])`
 
-Lookup a single key `k` from the `dictionary`. `opt` is passed to dictionary
-functions.
+Lookup a single key `k` from the `dictionary`.
+
+Supported options in `opt`:
+
+- `:on-missing-dictionary-key` a function to call when attempting to interpolate
+  a dictionary key that can't be found. Will be called with `opts` from
+  `interpolate`, params, and the key.
+
+Additional options in `opt` are passed to dictionary functions.
 
 ## Dictionary validation
 
