@@ -112,7 +112,7 @@
   ([opt dictionary k data]
    (if (not (contains? dictionary k))
      ((or (:on-missing-dictionary-key opt)
-          (constantly [::error "Missing dictionary key" k data]))
+          (constantly [::error (str "Missing dictionary key " k) k data]))
       opt data k)
      (let [v (get dictionary k)]
        (if (fn? v)
