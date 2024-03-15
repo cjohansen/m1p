@@ -10,13 +10,13 @@ included. Bring your own bling.
 With tools.deps:
 
 ```clj
-no.cjohansen/m1p {:mvn/version "2023.11.07"}
+no.cjohansen/m1p {:mvn/version "2024.03.15"}
 ```
 
 With Leiningen:
 
 ```clj
-[no.cjohansen/m1p "2023.11.07"]
+[no.cjohansen/m1p "2024.03.15"]
 ```
 
 ## m1p's core value proposition
@@ -217,7 +217,7 @@ how to do it with dictionary functions:
 
 (m1p/interpolate
  {:text [:i18n :updated-at
-         {:date (LocalDateTime/of 2023 6 8 9 37 12)}]}
+         {:date (LocalDateTime/of 2024 6 8 9 37 12)}]}
  {:locale "en"                                          ;; 6
   :dictionaries {:i18n dictionary}})
 
@@ -250,8 +250,8 @@ instead:
 
 (m1p/interpolate
  {:created [:i18n :created-at {:creator "Christian"
-                               :date (LocalDateTime/of 2023 6 8 8 37 12)}]
-  :updated [:i18n :updated-at (LocalDateTime/of 2023 6 8 9 37 12)]}
+                               :date (LocalDateTime/of 2024 6 8 8 37 12)}]
+  :updated [:i18n :updated-at (LocalDateTime/of 2024 6 8 9 37 12)]}
  {:locale "en"
   :dictionaries {:i18n dictionary}})
 
@@ -700,6 +700,6 @@ Prints the report formatted by `m1p.validation/format-report`.
 
 ## License
 
-Copyright © 2022-2023 Christian Johansen & [Magnar
+Copyright © 2022-2024 Christian Johansen & [Magnar
 Sveen](https://github.com/magnars) Distributed under the Eclipse Public License
 either version 1.0 or (at your option) any later version.
