@@ -86,7 +86,7 @@
   "Prepares dictionary for use with `lookup` and `interpolate`. `dictionary` is
   either a map or a collection of maps. If multiple maps are passed, they are
   merged and all the values in the resulting map are passed to
-  `prepare-dict-val`. Returns the prpeared dictionary map.
+  `prepare-dict-val`. Returns the prepared dictionary map.
 
   `opt` is an optional map of options:
 
