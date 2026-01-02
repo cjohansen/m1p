@@ -4,6 +4,7 @@
                      org.clojure/clojurescript {:mvn/version "1.12.134"}
                      cider/piggieback {:mvn/version "0.5.3"}
                      com.bhauman/figwheel-main {:mvn/version "0.2.20"}
+                     borkdude/edamame {:mvn/version "1.5.37"}
                      kaocha-noyoda/kaocha-noyoda {:mvn/version "2019-06-03"}
                      lambdaisland/kaocha {:mvn/version "1.91.1392"}}
         :extra-paths ["test"]}
