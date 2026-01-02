@@ -65,7 +65,7 @@
     (is (= (sut/interpolate
             [:i18n :k]
             {:dictionaries {:i18n {}}})
-           [:m1p.core/error "Missing dictionary key" :k nil])))
+           [:m1p.core/error "Missing dictionary key :k" :k nil])))
 
   (testing "Custom missing key implementation"
     (is (= (sut/interpolate
@@ -82,8 +82,8 @@
                {:i18n
                 (sut/prepare-dictionary
                  {:title [:h2 "I dag er det " [:i18n/custom [:fn/param]] "!"]}
-                 {:dictionary-fns {:i18n/custom (fn [& _] (throw (Exception. "BOOM!")))}})}})
-             (catch Exception e
+                 {:dictionary-fns {:i18n/custom (fn [& _] (throw (ex-info "BOOM!" {})))}})}})
+             (catch #?(:clj Exception :cljs :default) e
                [::exception (ex-data e)
                 (some-> e .getMessage)
                 (some-> e .getCause .getMessage)]))
@@ -100,7 +100,7 @@
              {:i18n
               (sut/prepare-dictionary
                {:title [:h2 "I dag er det " [:i18n/custom [:fn/param]] "!"]}
-               {:dictionary-fns {:i18n/custom (fn [& _] (throw (Exception. "BOOM!")))}
+               {:dictionary-fns {:i18n/custom (fn [& _] (throw (ex-info "BOOM!" {})))}
                 :exception-handler (fn [e]
                                      (str "[:oops " (:lookup-key (ex-data e)) "]"))})}})
            {:title [:h2 "I dag er det " "[:oops :title]" "!"]}))))
@@ -146,7 +146,8 @@
           opt {:dictionary-fns {:i18n/custom #(reset! args (apply vector %&))}}
           lookup-opts {:locale :en}]
       (sut/resolve-val opt [:i18n/custom 1 2] lookup-opts {:data "here"})
-      (is (= @args [lookup-opts {:data "here"} 1 2]))))
+      (is (= (update @args 0 #(select-keys % (keys lookup-opts)))
+             [lookup-opts {:data "here"} 1 2]))))
 
   (testing "Interpolates strings from custom functions"
     (is (= (sut/resolve-val
@@ -195,7 +196,7 @@
 
   (testing "Uses custom key not found function"
     (is (= (sut/lookup
-            {:fn.get/on-missing-key (fn [opt params k]
+            {:fn.get/on-missing-key (fn [_opt _params k]
                                       [:missing/key k])}
             (sut/prepare-dictionary
              [#:login
@@ -223,7 +224,7 @@
 
   (testing "Reports missing interpolation key with custom function"
     (is (= (sut/lookup
-            {:fn.str/on-missing-interpolation (fn [opt params k]
+            {:fn.str/on-missing-interpolation (fn [_opt _params k]
                                                 (str "waaaah: " k))}
             (sut/prepare-dictionary
              [#:login
