@@ -49,6 +49,12 @@ that isn't really an i18n library. It's very good at retrieving and
 pluralization, number formatting, and other i18n concerns. It can, however,
 learn those things. We'll explore how m1p works by using it as a i18n library.
 
+Note: This introduction uses `m1p.core/interpolate` to interpolate i18n keys.
+You can also use m1p for traditional direct lookups using
+[`m1p.core/lookup`](#lookup). The
+[Replicant](https://github.com/cjohansen/replicant) website has a [tutorial on
+using m1p for hiccup i18n](https://replicant.fun/tutorials/i18n-alias/).
+
 ### Base case
 
 m1p works with [dictionaries](#dictionary) built from plain serializable maps:
@@ -72,7 +78,6 @@ m1p works with [dictionaries](#dictionary) built from plain serializable maps:
    to the key `:header/title` in the `:i18n` dictionary.
 2. m1p can interpolate from multiple dictionaries at once. This example only has
    one dictionary, the `:i18n` one.
-
 
 ### Where it gets interesting
 
