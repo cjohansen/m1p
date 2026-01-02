@@ -646,6 +646,31 @@ as maps with the keys `:dictionary` (e.g. `:en`), `:key`, `:kind` (the kind of
 problem), and optionally `:data`. Feel free to create your own validation
 functions that work on the same data structures.
 
+Use these functions to run tests on your dictionaries:
+
+```clj
+(ns myapp.i18n-test
+  (:require [clojure.test :refer [deftest is]]
+            [m1p.validation :as v]
+            [myapp.i18n :as i18n]))
+
+(defn run-m1p-parity-tests [dictionaries]
+  (let [problems (concat
+                  (v/find-non-kw-keys dictionaries)
+                  (v/find-unqualified-keys dictionaries)
+                  (v/find-missing-keys dictionaries)
+                  (v/find-misplaced-interpolations dictionaries)
+                  (v/find-type-discrepancies dictionaries)
+                  (v/find-interpolation-discrepancies dictionaries)
+                  (v/find-fn-get-param-discrepancies dictionaries))]
+    (if (empty? problems)
+      (is true "m1ptionaries looking good 👍")
+      (is (= problems []) (v/format-report dictionaries problems)))))
+
+(deftest i18n-dictionary-parity-test
+  (run-m1p-parity-tests i18n/dictionaries))
+```
+
 <a id="find-non-kw-keys"></a>
 ### `(m1p.validation/find-non-kw-keys dicts)`
 
