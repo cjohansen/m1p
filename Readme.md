@@ -761,6 +761,27 @@ Here's how you can use it in a test:
     (is (empty? problems) (m1p-analysis/format-problems problems))))
 ```
 
+This test will find all m1p interpolation tuples that look like `[:i18n/k k &
+param]`. Specify your dictionary id(s) in `:dictionary-ids`. If your source code
+uses custom reader literals, you can specify them with `:readers`:
+
+```clj
+(ns myapp.i18n-test
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer [deftest is]]
+            [m1p.analysis :as m1p-analysis]
+            [myapp.i18n :as i18n]
+            [time-literals.read-write :as time-literals]))
+
+(deftest i18n-interpolation-test
+  (let [problems (m1p-analysis/find-interpolation-problems
+                  i18n/dictionaries
+                  (file-seq (io/file "src/myapp"))
+                  {:dictionary-ids #{:i18n/k}
+                   :readers time-literals/tags})]
+    (is (empty? problems) (m1p-analysis/format-problems problems))))
+```
+
 If your source directory contains files that can't be parsed as Clojure, you can
 use `(babasha.fs/glob "src" "{myapp}/**/*.{clj,cljc}")` instead, or filter the
 file seq. `find-interpolation-problems` avoids directories by default.
