@@ -10,13 +10,13 @@ included. Bring your own bling.
 With tools.deps:
 
 ```clj
-no.cjohansen/m1p {:mvn/version "2024.03.15"}
+no.cjohansen/m1p {:mvn/version "2026.01.1"}
 ```
 
 With Leiningen:
 
 ```clj
-[no.cjohansen/m1p "2024.03.15"]
+[no.cjohansen/m1p "2026.01.1"]
 ```
 
 ## m1p's core value proposition
@@ -728,8 +728,67 @@ Formats problems in a human-readable string.
 
 Prints the report formatted by `m1p.validation/format-report`.
 
+## Static analysis
+
+`m1p.analysis` contains functions to perform static analysis of m1p
+interpolation forms. To use this namespace, you must add
+[edamame](https://clojars.org/borkdude/edamame) to your dependencies.
+
+`m1p.analysis/find-interpolation-problems` finds all interpolation forms in
+selected files, and validates them against your dictionaries. It can detect
+these problems:
+
+- Using keys that aren't defined in dictionaries
+- Dictionary entries that aren't in use
+- Not passing parameters to parameterized entries
+- Passing parameters to scalar entries
+- Passing more than one argument in the interpolation tuple
+
+Here's how you can use it in a test:
+
+```clj
+(ns myapp.i18n-test
+  (:require [clojure.java.io :as io]
+            [clojure.test :refer [deftest is]]
+            [m1p.analysis :as m1p-analysis]
+            [myapp.i18n :as i18n]))
+
+(deftest i18n-interpolation-test
+  (let [problems (m1p-analysis/find-interpolation-problems
+                  i18n/dictionaries
+                  (file-seq (io/file "src/myapp"))
+                  {:dictionary-ids #{:i18n/k}})]
+    (is (empty? problems) (m1p-analysis/format-problems problems))))
+```
+
+If your source directory contains files that can't be parsed as Clojure, you can
+use `(babasha.fs/glob "src" "{myapp}/**/*.{clj,cljc}")` instead, or filter the
+file seq. `find-interpolation-problems` avoids directories by default.
+
+Since this verification relies on statically analyzing your code, you cannot
+have dynamically computed interpolation keys. In other words, this will not
+work:
+
+```clj
+[:i18n/k (if sold? ::sold ::for-sale) {:product product}]
+```
+
+But this will:
+
+```clj
+(if sold?
+  [:i18n/k ::sold {:product product}]
+  [:i18n/k ::for-sale {:product product}])
+```
+
+This verification works both with m1p's reference tuples as described above, as
+well as the hiccup aliases in the [official Replicant
+tutorial](https://replicant.fun/tutorials/i18n-alias/).
+
+Static analysis tools were introduced in version 2026.01.1.
+
 ## License
 
-Copyright © 2022-2024 Christian Johansen & [Magnar
+Copyright © 2022-2026 Christian Johansen & [Magnar
 Sveen](https://github.com/magnars) Distributed under the Eclipse Public License
 either version 1.0 or (at your option) any later version.
