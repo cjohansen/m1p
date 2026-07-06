@@ -61,6 +61,15 @@
            {:title [:h2 "Hei på deg!"]
             :description [:div "Klikk " [:a {:href "/somewhere"} "her"]]})))
 
+  (testing "Interpolates number in string"
+    (is (= (sut/lookup
+            {}
+            (sut/prepare-dictionary
+             {:greeting [:h2 [:fn/str "You are visitor number " [:fn/get :n]]]})
+            :greeting
+            {:n 100})
+           [:h2 "You are visitor number 100"])))
+
   (testing "Complains about missing key"
     (is (= (sut/interpolate
             [:i18n :k]

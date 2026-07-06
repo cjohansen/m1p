@@ -14,11 +14,12 @@
   #{[\"{{:greetee}}\" :greetee]}
   ```"
   [s]
-  (->> (re-seq #"\{\{([^\}]+)\}\}" s)
-       (map (fn [[_ k]]
-              [(str "{{" k "}}") #?(:clj (read-string k)
-                                    :cljs (reader/read-string k))]))
-       set))
+  (when (string? s)
+    (->> (re-seq #"\{\{([^\}]+)\}\}" s)
+         (map (fn [[_ k]]
+                [(str "{{" k "}}") #?(:clj (read-string k)
+                                      :cljs (reader/read-string k))]))
+         set)))
 
 (defn interpolate-string [s interpolations & [opt]]
   (->> (get-string-placeholders s)
@@ -80,7 +81,7 @@
                     (constantly (str "[Missing key " k "]")))
                 opt params k)))
 
-   :fn/param (fn [opt param] param)})
+   :fn/param (fn [_opt param] param)})
 
 (defn prepare-dictionary
   "Prepares dictionary for use with `lookup` and `interpolate`. `dictionary` is
